@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { CategoryTag } from "./category";
+import { CategorySticker, meta } from "./category";
+import { StarIcon } from "./star-button";
 
 export function timeAgo(sqlDate: string) {
   // SQLite datetime('now') is UTC without a zone marker.
@@ -9,7 +10,7 @@ export function timeAgo(sqlDate: string) {
   if (s < 3600) return `${Math.floor(s / 60)}m ago`;
   if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
   if (s < 86400 * 7) return `${Math.floor(s / 86400)}d ago`;
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toLowerCase();
 }
 
 export function FeedbackNote({
@@ -31,49 +32,88 @@ export function FeedbackNote({
   footer?: ReactNode;
   index?: number;
 }) {
+  const tilt = [2.5, -2, 3, -3][index % 4];
   return (
-    <article
-      data-cat={category}
-      className="rise panel relative overflow-hidden p-5 sm:p-6"
-      style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
-    >
-      <span className="absolute inset-y-0 left-0 w-1 bg-(--c)" aria-hidden />
-      <header className="flex items-start gap-3">
+    <article className="pop-in brut relative p-5 sm:p-6" style={{ animationDelay: `${Math.min(index, 8) * 60}ms` }}>
+      <span
+        className="absolute inset-x-0 top-0 h-2.5 rounded-t-[13px] border-b-[2.5px] border-line"
+        style={{ background: meta(category).color }}
+        aria-hidden
+      />
+      <header className="mt-2 flex items-start gap-3">
         {avatar}
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-1.5 text-sm">
-            <span className="font-semibold">{from}</span>
-            <span className="text-faint">→</span>
-            <span className="font-medium text-muted">{to}</span>
+          <div className="text-[17px] leading-tight font-extrabold">{from}</div>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            {to}
+            <span className="font-mono text-xs font-bold text-faint">· {timeAgo(createdAt)}</span>
           </div>
-          <div className="text-xs text-faint">{timeAgo(createdAt)}</div>
         </div>
-        <CategoryTag category={category} />
+        <CategorySticker category={category} tilt={tilt} />
       </header>
-      <p className="mt-4 whitespace-pre-wrap font-display text-[19px] leading-[1.55] tracking-[-0.005em] text-ink">
-        {message}
-      </p>
-      {footer && <footer className="mt-5 flex flex-wrap items-center justify-between gap-3">{footer}</footer>}
+      <p className="mt-4 text-[19px] leading-[1.5] font-medium whitespace-pre-wrap sm:text-xl">{message}</p>
+      {footer && (
+        <footer className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t-2 border-dashed border-line/25 pt-4">
+          {footer}
+        </footer>
+      )}
     </article>
   );
 }
 
-export function EmptyState({ icon, title, children }: { icon: ReactNode; title: string; children?: ReactNode }) {
+/** Small "→ you" / "→ everyone" sticker. */
+export function ToSticker({ to }: { to: "you" | "everyone" | string }) {
+  const bg = to === "you" ? "bg-pink" : to === "everyone" ? "bg-blue" : "bg-mint";
+  const label = to === "you" ? "→ you 🫵" : to === "everyone" ? "→ everyone 📣" : `→ ${to}`;
+  return <span className={`sticker !py-0 !text-xs ${bg}`}>{label}</span>;
+}
+
+export function EmptyState({ emoji, title, children }: { emoji: string; title: string; children?: ReactNode }) {
   return (
-    <div className="panel flex flex-col items-center px-6 py-14 text-center">
-      <div className="mb-4 grid size-14 place-items-center rounded-2xl bg-sunken text-muted">{icon}</div>
-      <h3 className="font-display text-xl font-semibold">{title}</h3>
-      {children && <div className="mt-2 max-w-sm text-sm text-muted">{children}</div>}
+    <div className="brut flex flex-col items-center px-6 py-14 text-center">
+      <div className="wiggle mb-4 text-6xl" style={{ ["--r" as string]: "-8deg" }}>{emoji}</div>
+      <h3 className="text-2xl font-extrabold tracking-tight">{title}</h3>
+      {children && <div className="mt-2 max-w-sm text-muted">{children}</div>}
     </div>
   );
 }
 
-export function PageHeader({ eyebrow, title, children }: { eyebrow?: string; title: ReactNode; children?: ReactNode }) {
+export function PageHeader({
+  tag,
+  tagColor = "var(--lime)",
+  title,
+  children,
+}: {
+  tag?: string;
+  tagColor?: string;
+  title: ReactNode;
+  children?: ReactNode;
+}) {
   return (
     <div className="mb-8">
-      {eyebrow && <div className="eyebrow mb-2">{eyebrow}</div>}
-      <h1 className="font-display text-[34px] font-semibold leading-tight tracking-tight sm:text-[40px]">{title}</h1>
-      {children && <p className="mt-2 max-w-xl text-[15px] text-muted">{children}</p>}
+      {tag && (
+        <span className="sticker tag mb-4 -rotate-2 !text-[11px]" style={{ background: tagColor }}>
+          {tag}
+        </span>
+      )}
+      <h1 className="text-[40px] leading-[0.95] font-extrabold tracking-[-0.035em] sm:text-[56px]">{title}</h1>
+      {children && <p className="mt-3 max-w-xl text-[17px] text-muted">{children}</p>}
     </div>
+  );
+}
+
+export function starLine(count: number) {
+  if (count === 0) return "be the first to star this 👀";
+  if (count === 1) return "1 person felt this";
+  if (count >= 5) return `${count} people felt this 🔥`;
+  return `${count} people felt this`;
+}
+
+/** Read-only star count. */
+export function StarCount({ count }: { count: number }) {
+  return (
+    <span className={`sticker !gap-1.5 !px-3 !py-1 ${count ? "bg-yellow" : "bg-surface !text-text"}`}>
+      <StarIcon filled={count > 0} size={16} /> {count}
+    </span>
   );
 }

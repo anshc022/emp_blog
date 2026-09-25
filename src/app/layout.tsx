@@ -1,12 +1,19 @@
-import type { Metadata } from "next";
-import "@fontsource-variable/fraunces";
-import "@fontsource-variable/fraunces/wght-italic.css";
-import "@fontsource-variable/inter-tight";
+import type { Metadata, Viewport } from "next";
+import "@fontsource-variable/bricolage-grotesque/opsz.css";
+import "@fontsource/space-mono/400.css";
+import "@fontsource/space-mono/700.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Candor — anonymous team feedback",
-  description: "Say the thing. Kindly. Anonymous feedback for the whole company.",
+  title: "spill. — anonymous team feedback",
+  description: "spill the tea, anonymously. honest, kind feedback for the whole company.",
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fbf6ec" },
+    { media: "(prefers-color-scheme: dark)", color: "#111111" },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

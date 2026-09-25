@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { Eye, Megaphone, SearchX, Trash2 } from "lucide-react";
 import { PersonAvatar } from "@/components/avatar";
-import { EmptyState, FeedbackNote, PageHeader } from "@/components/feedback-note";
+import { EmptyState, FeedbackNote, PageHeader, ToSticker } from "@/components/feedback-note";
+import { persona } from "@/components/persona";
 import { Segmented } from "@/components/segmented";
 import { StarButton } from "@/components/star-button";
 import { deleteFeedback } from "@/lib/actions";
@@ -30,58 +30,68 @@ export default async function AdminFeedbackPage(props: PageProps<"/admin">) {
     return str ? `/admin?${str}` : "/admin";
   };
 
+  const tiles: [string, number, string, string][] = [
+    ["👯", stats.employees, "humans", "var(--lilac)"],
+    ["☕", stats.total, "notes", "var(--pink)"],
+    ["🗓️", stats.this_week, "this week", "var(--blue)"],
+    ["⭐", stats.stars, "stars", "var(--yellow)"],
+  ];
+
   return (
     <>
-      <PageHeader eyebrow="Super admin" title="Every note, unmasked.">
-        You can see who wrote each message. Employees never see this page, and senders stay anonymous to everyone else.
+      <PageHeader tag="👁️ god mode" tagColor="var(--yellow)" title="all the tea, with names 👁️">
+        you can see who wrote everything. with great power comes great responsibility 🕷️
       </PageHeader>
 
-      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          ["People", stats.employees],
-          ["Notes", stats.total],
-          ["This week", stats.this_week],
-          ["Stars given", stats.stars],
-        ].map(([label, value]) => (
-          <div key={label} className="panel p-4">
-            <div className="font-display text-3xl font-semibold tabular-nums">{value}</div>
-            <div className="mt-0.5 text-xs font-medium text-muted">{label}</div>
+      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {tiles.map(([emoji, value, label, color], i) => (
+          <div
+            key={label}
+            className="brut-sm p-4 text-on-bright"
+            style={{ background: color, rotate: `${[-1.5, 1, -1, 1.5][i]}deg` }}
+          >
+            <div className="text-2xl">{emoji}</div>
+            <div className="text-4xl leading-none font-extrabold tabular-nums">{value}</div>
+            <div className="mt-1 text-sm font-bold">{label}</div>
           </div>
         ))}
       </div>
 
-      <form className="panel mb-6 flex flex-wrap items-end gap-3 p-4">
+      <form className="brut mb-7 flex flex-wrap items-end gap-3 p-4">
         <div className="min-w-40 flex-1">
-          <label className="field-label" htmlFor="author">Written by</label>
-          <select className="field" id="author" name="author" defaultValue={author ?? ""}>
-            <option value="">Anyone</option>
+          <label className="field-label" htmlFor="author">written by ✍️</label>
+          <select className="field !py-2.5" id="author" name="author" defaultValue={author ?? ""}>
+            <option value="">anyone</option>
             {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
           </select>
         </div>
         <div className="min-w-40 flex-1">
-          <label className="field-label" htmlFor="recipient">Sent to</label>
-          <select className="field" id="recipient" name="recipient" defaultValue={recipient ?? ""}>
-            <option value="">Anyone</option>
-            <option value="everyone">Everyone (company-wide)</option>
+          <label className="field-label" htmlFor="recipient">sent to 🎯</label>
+          <select className="field !py-2.5" id="recipient" name="recipient" defaultValue={recipient ?? ""}>
+            <option value="">anyone</option>
+            <option value="everyone">everyone 📣</option>
             {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
           </select>
         </div>
         {sort === "top" && <input type="hidden" name="sort" value="top" />}
-        <button className="btn-primary">Apply</button>
-        {filtered && <Link href="/admin" className="btn-quiet !py-2.5">Clear</Link>}
+        <button className="btn bg-lime">filter 🔍</button>
+        {filtered && <Link href="/admin" className="btn bg-surface !text-text">clear</Link>}
       </form>
 
-      <div className="mb-5 flex items-center justify-between gap-3">
-        <span className="text-sm text-muted">{items.length} {items.length === 1 ? "note" : "notes"}</span>
-        <Segmented value={sort} hrefFor={href} options={[{ value: "new", label: "Newest" }, { value: "top", label: "★ Top" }]} />
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <span className="tag text-muted">{items.length} {items.length === 1 ? "note" : "notes"}</span>
+        <Segmented
+          value={sort}
+          color="var(--yellow)"
+          hrefFor={href}
+          options={[{ value: "new", label: "fresh 🆕" }, { value: "top", label: "top ⭐" }]}
+        />
       </div>
 
       {items.length === 0 ? (
-        <EmptyState icon={<SearchX size={24} />} title="No notes match">
-          Try a different filter.
-        </EmptyState>
+        <EmptyState emoji="🕵️" title="nothing matches">try a different filter</EmptyState>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {items.map((f, i) => (
             <FeedbackNote
               key={f.id}
@@ -89,27 +99,24 @@ export default async function AdminFeedbackPage(props: PageProps<"/admin">) {
               category={f.category}
               message={f.message}
               createdAt={f.created_at}
-              avatar={<PersonAvatar name={f.author_name} size={40} />}
+              avatar={<PersonAvatar name={f.author_name} size={44} />}
               from={
-                <span className="inline-flex items-center gap-1.5">
+                <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                   {f.author_name}
-                  <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-accent">
-                    <Eye size={11} strokeWidth={2.6} /> Revealed
-                  </span>
+                  <span className="sticker -rotate-2 bg-coral !py-0 !text-[11px]">🎭 unmasked</span>
                 </span>
               }
               to={
-                f.recipient_name ?? (
-                  <span className="inline-flex items-center gap-1"><Megaphone size={13} /> Everyone</span>
-                )
+                <>
+                  <ToSticker to={f.recipient_name ?? "everyone"} />
+                  <span className="font-mono text-xs font-bold text-faint">aka {persona(f.id).name.toLowerCase()}</span>
+                </>
               }
               footer={
                 <>
                   <form action={deleteFeedback}>
                     <input type="hidden" name="id" value={f.id} />
-                    <button className="btn-quiet hover:!border-accent/40 hover:!text-accent">
-                      <Trash2 size={13} /> Delete
-                    </button>
+                    <button className="btn-sm hover:bg-coral hover:text-on-bright">🗑️ yeet</button>
                   </form>
                   <StarButton id={f.id} count={f.star_count} starred={!!f.starred} />
                 </>

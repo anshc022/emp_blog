@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { Inbox, Megaphone } from "lucide-react";
 import { AnonAvatar } from "@/components/avatar";
-import { EmptyState, FeedbackNote, PageHeader } from "@/components/feedback-note";
+import { EmptyState, FeedbackNote, PageHeader, ToSticker, starLine } from "@/components/feedback-note";
+import { persona } from "@/components/persona";
 import { Segmented } from "@/components/segmented";
 import { StarButton } from "@/components/star-button";
 import { countInbox, listInbox, type InboxSort, type InboxView } from "@/lib/db";
@@ -25,37 +25,40 @@ export default async function InboxPage(props: PageProps<"/inbox">) {
 
   return (
     <>
-      <PageHeader eyebrow="Inbox" title={<>Hi {user.name.split(" ")[0]}, here’s what people are saying.</>}>
-        Everything here is anonymous. Star the notes that resonate so the good ones rise to the top.
+      <PageHeader tag="📥 inbox" title={<>what&apos;s the tea, {user.name.split(" ")[0].toLowerCase()}? ☕</>}>
+        everything here is anonymous. star the ones that hit ⭐ and the best takes float to the top.
       </PageHeader>
 
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-7 flex flex-wrap items-center justify-between gap-3">
         <Segmented
           value={view}
           hrefFor={(v) => href({ view: v })}
           options={[
-            { value: "all", label: "All", count: (counts.mine ?? 0) + (counts.company ?? 0) },
-            { value: "mine", label: "For you", count: counts.mine ?? 0 },
-            { value: "company", label: "Company", count: counts.company ?? 0 },
+            { value: "all", label: "all", count: (counts.mine ?? 0) + (counts.company ?? 0) },
+            { value: "mine", label: "for you 🫵", count: counts.mine ?? 0 },
+            { value: "company", label: "company 📣", count: counts.company ?? 0 },
           ]}
         />
         <Segmented
           value={sort}
+          color="var(--yellow)"
           hrefFor={(v) => href({ sort: v })}
           options={[
-            { value: "new", label: "Newest" },
-            { value: "top", label: "★ Top" },
+            { value: "new", label: "fresh 🆕" },
+            { value: "top", label: "top ⭐" },
           ]}
         />
       </div>
 
       {items.length === 0 ? (
-        <EmptyState icon={<Inbox size={24} />} title="Nothing here yet">
-          When someone shares feedback with you or the whole company, it lands here.{" "}
-          <Link href="/give" className="font-semibold text-accent hover:underline">Start the conversation →</Link>
+        <EmptyState emoji="🦗" title="it's giving… empty">
+          no tea here yet. suspicious. be the main character and{" "}
+          <Link href="/give" className="font-extrabold text-text underline decoration-pink decoration-4 underline-offset-2">
+            spill first →
+          </Link>
         </EmptyState>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {items.map((f, i) => (
             <FeedbackNote
               key={f.id}
@@ -64,26 +67,17 @@ export default async function InboxPage(props: PageProps<"/inbox">) {
               message={f.message}
               createdAt={f.created_at}
               avatar={<AnonAvatar seed={f.id} />}
-              from="Anonymous"
-              to={
-                f.to_everyone ? (
-                  <span className="inline-flex items-center gap-1"><Megaphone size={13} /> Everyone</span>
-                ) : (
-                  <span className="text-accent">You</span>
-                )
-              }
+              from={persona(f.id).name}
+              to={<ToSticker to={f.to_everyone ? "everyone" : "you"} />}
               footer={
                 <>
-                  <span className="text-xs text-faint">
-                    {f.star_count > 0
-                      ? `${f.star_count} ${f.star_count === 1 ? "person" : "people"} starred this`
-                      : "Be the first to star this"}
-                  </span>
+                  <span className="text-sm font-semibold text-muted">{starLine(f.star_count)}</span>
                   <StarButton id={f.id} count={f.star_count} starred={!!f.starred} />
                 </>
               }
             />
           ))}
+          <p className="pt-4 text-center text-sm font-bold text-faint">you&apos;re all caught up ✨ touch grass maybe? 🌱</p>
         </div>
       )}
     </>

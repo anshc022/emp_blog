@@ -1,6 +1,6 @@
-# Candor
+# spill. ☕
 
-*Say the thing. Kindly.* An internal, **anonymous** feedback app for the whole company.
+*spill the tea. anonymously.* An internal, **anonymous** feedback app for the whole company, with a loud, playful, Gen Z look.
 
 - Any employee can send feedback to **one colleague** or to **everyone**.
 - Recipients **never** see who wrote it. Their inbox only shows "Anonymous".
@@ -14,17 +14,19 @@
 | Employee | Read their inbox (filter: All / For you / Company, sort: Newest / Top), star notes, write feedback, see what they sent and how many stars it got, change password |
 | Super admin | Everything above, plus see **all** feedback with author names, filter by sender/recipient, sort by stars, delete messages, add employees, reset passwords, promote/demote admins, deactivate accounts |
 
-Feedback categories: Appreciation, Suggestion, Concern, Other.
+Feedback vibes: props 🙌, big idea 💡, red flag 🚩, random 🫠 (stored as Appreciation / Suggestion / Concern / Other).
+
+UX details: confetti when you send, a live "vibe meter" while you type (it even notices ALL CAPS), ⌘/Ctrl+Enter to send, a star button with an emoji burst, a stats ticker, dark mode, and a phone-friendly bottom dock.
 
 ## Tech
 
-Next.js 16 (App Router, Server Actions) · Tailwind CSS 4 · Fraunces + Inter Tight (self-hosted) · lucide icons · SQLite (`better-sqlite3`) · signed-cookie sessions (`jose`) · `bcryptjs` password hashing.
+Next.js 16 (App Router, Server Actions) · Tailwind CSS 4 · Bricolage Grotesque + Space Mono (self-hosted) · SQLite (`better-sqlite3`) · signed-cookie sessions (`jose`) · `bcryptjs` password hashing.
 
 Anonymity is enforced on the server: the employee-facing queries in `src/lib/db.ts` never select the author,
 so the name cannot reach an employee's browser. Only the admin pages, which are guarded by `requireAdmin()`, join the author.
 
 The UI follows the system light/dark setting and works on phones (bottom tab bar) as well as desktop (sidebar).
-To rename the app, change `APP_NAME` in `src/components/brand.tsx`.
+To rename the app, change `APP_NAME` in `src/components/brand.tsx`. Category labels live in `src/components/category.tsx`, aliases in `src/components/persona.ts`.
 
 ## Getting started
 

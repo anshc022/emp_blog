@@ -24,25 +24,25 @@ if (count === 0) {
     authorId: id("ankita@company.com"),
     recipientId: null,
     category: "Suggestion",
-    message: "Could we move the weekly sync to Tuesday mornings? Mondays are always packed.",
+    message: "can we move the weekly sync to tuesday mornings? mondays are already chaos 😵‍💫",
   });
   createFeedback({
     authorId: id("rahul@company.com"),
     recipientId: id("ankita@company.com"),
     category: "Appreciation",
-    message: "The new onboarding screens are beautiful. Customers noticed right away.",
+    message: "the new onboarding screens are actually so clean. customers noticed immediately. W 🙌",
   });
   createFeedback({
     authorId: id("priya@company.com"),
     recipientId: id("rahul@company.com"),
     category: "Concern",
-    message: "Release notes often arrive after launch, which makes it hard to plan campaigns.",
+    message: "release notes keep landing after launch, so marketing is always playing catch-up. can we get them a few days early? 🙏",
   });
   createFeedback({
     authorId: id("arjun@company.com"),
     recipientId: null,
     category: "Appreciation",
-    message: "Shout-out to whoever restocked the good coffee. Mornings are better now.",
+    message: "shout-out to whoever restocked the good coffee. mornings are healed ☕✨",
   });
 
   // A few stars on the company-wide notes.

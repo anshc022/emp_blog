@@ -1,9 +1,6 @@
 import Link from "next/link";
-import { Megaphone, Send } from "lucide-react";
 import { PersonAvatar } from "@/components/avatar";
-import { LogoMark } from "@/components/brand";
-import { EmptyState, FeedbackNote, PageHeader } from "@/components/feedback-note";
-import { StarCount } from "@/components/star-button";
+import { EmptyState, FeedbackNote, PageHeader, StarCount, ToSticker, starLine } from "@/components/feedback-note";
 import { listSent } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 
@@ -14,17 +11,31 @@ export default async function SentPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Sent" title="Your notes">
-        Only you can see this list. Recipients saw these as anonymous.
-        {items.length > 0 && ` You've sent ${items.length} and collected ${stars} ★ so far.`}
+      <PageHeader tag="🧾 receipts" tagColor="var(--blue)" title="your receipts 🧾">
+        only you can see this. recipients saw these as anonymous.
       </PageHeader>
 
+      {items.length > 0 && (
+        <div className="mb-8 grid grid-cols-2 gap-4">
+          <div className="brut-sm -rotate-1 bg-pink p-4 text-on-bright">
+            <div className="text-4xl font-extrabold">{items.length}</div>
+            <div className="font-bold">notes spilled ☕</div>
+          </div>
+          <div className="brut-sm rotate-1 bg-yellow p-4 text-on-bright">
+            <div className="text-4xl font-extrabold">{stars}</div>
+            <div className="font-bold">stars farmed ⭐</div>
+          </div>
+        </div>
+      )}
+
       {items.length === 0 ? (
-        <EmptyState icon={<Send size={22} />} title="You haven’t sent anything yet">
-          <Link href="/give" className="font-semibold text-accent hover:underline">Write your first note →</Link>
+        <EmptyState emoji="🤐" title="you haven't spilled anything yet">
+          <Link href="/give" className="font-extrabold text-text underline decoration-pink decoration-4 underline-offset-2">
+            write your first note →
+          </Link>
         </EmptyState>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {items.map((f, i) => (
             <FeedbackNote
               key={f.id}
@@ -34,18 +45,19 @@ export default async function SentPage() {
               createdAt={f.created_at}
               avatar={
                 f.recipient_name ? (
-                  <PersonAvatar name={f.recipient_name} size={40} />
+                  <PersonAvatar name={f.recipient_name} size={44} />
                 ) : (
-                  <span className="grid size-10 place-items-center rounded-full bg-sunken"><LogoMark className="size-6" /></span>
+                  <span className="grid size-11 place-items-center rounded-full border-[2.5px] border-line bg-blue text-xl">📣</span>
                 )
               }
-              from="You (anonymous)"
-              to={
-                f.recipient_name ?? (
-                  <span className="inline-flex items-center gap-1"><Megaphone size={13} /> Everyone</span>
-                )
+              from="you (incognito 🕶️)"
+              to={<ToSticker to={f.recipient_name ?? "everyone"} />}
+              footer={
+                <>
+                  <span className="text-sm font-semibold text-muted">{starLine(f.star_count)}</span>
+                  <StarCount count={f.star_count} />
+                </>
               }
-              footer={<StarCount count={f.star_count} />}
             />
           ))}
         </div>

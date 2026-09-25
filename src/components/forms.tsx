@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { Check, ChevronDown, KeyRound, Lock, Megaphone, Search, Send } from "lucide-react";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import {
   changePassword,
@@ -16,13 +15,9 @@ import { CATEGORY_META } from "./category";
 
 function Status({ state }: { state: FormState }) {
   if (state?.error)
-    return <p className="rounded-xl bg-accent-soft px-3.5 py-2.5 text-sm font-medium text-accent">{state.error}</p>;
+    return <p className="pop-in brut-sm bg-coral px-4 py-2.5 text-sm font-bold text-on-bright">{state.error}</p>;
   if (state?.success)
-    return (
-      <p className="flex items-center gap-2 rounded-xl bg-(--cat-appreciation-soft) px-3.5 py-2.5 text-sm font-medium text-(--cat-appreciation)">
-        <Check size={16} strokeWidth={2.6} /> {state.success}
-      </p>
-    );
+    return <p className="pop-in brut-sm bg-lime px-4 py-2.5 text-sm font-bold text-on-bright">{state.success}</p>;
   return null;
 }
 
@@ -39,19 +34,30 @@ function useResetOnSuccess(state: FormState) {
 
 export function LoginForm() {
   const [state, action, pending] = useActionState(login, undefined);
+  const [peek, setPeek] = useState(false);
   return (
     <form action={action} className="space-y-5">
       <div>
-        <label className="field-label" htmlFor="email">Work email</label>
+        <label className="field-label" htmlFor="email">work email 📧</label>
         <input className="field" id="email" name="email" type="email" autoComplete="email" placeholder="you@company.com" required />
       </div>
       <div>
-        <label className="field-label" htmlFor="password">Password</label>
-        <input className="field" id="password" name="password" type="password" autoComplete="current-password" required />
+        <label className="field-label" htmlFor="password">password 🤫</label>
+        <div className="relative">
+          <input className="field pr-14" id="password" name="password" type={peek ? "text" : "password"} autoComplete="current-password" placeholder="••••••••" required />
+          <button
+            type="button"
+            onClick={() => setPeek((p) => !p)}
+            className="absolute top-1/2 right-3 -translate-y-1/2 text-xl transition hover:scale-125"
+            aria-label={peek ? "Hide password" : "Show password"}
+          >
+            {peek ? "🙉" : "🙈"}
+          </button>
+        </div>
       </div>
       <Status state={state} />
-      <button className="btn-primary w-full py-3" disabled={pending}>
-        {pending ? "Signing in…" : "Sign in"}
+      <button className="btn w-full bg-pink py-3.5 text-lg" disabled={pending}>
+        {pending ? "checking the vibes…" : "let me in 🚪"}
       </button>
     </form>
   );
@@ -75,9 +81,7 @@ function RecipientPicker({ colleagues }: { colleagues: Colleague[] }) {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return q
-      ? colleagues.filter((c) => `${c.name} ${c.department ?? ""}`.toLowerCase().includes(q))
-      : colleagues;
+    return q ? colleagues.filter((c) => `${c.name} ${c.department ?? ""}`.toLowerCase().includes(q)) : colleagues;
   }, [colleagues, query]);
 
   const selected = value === "everyone" ? null : colleagues.find((c) => c.id === value);
@@ -94,58 +98,56 @@ function RecipientPicker({ colleagues }: { colleagues: Colleague[] }) {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="field flex items-center gap-3 !py-2 text-left"
+        className="press brut-sm flex w-full items-center gap-3 bg-surface px-3 py-2.5 text-left"
       >
         {selected ? (
-          <PersonAvatar name={selected.name} size={32} />
+          <PersonAvatar name={selected.name} size={42} />
         ) : (
-          <span className="grid size-8 place-items-center rounded-full bg-ink text-paper">
-            <Megaphone size={15} />
-          </span>
+          <span className="grid size-[42px] place-items-center rounded-full border-[2.5px] border-line bg-blue text-xl">📣</span>
         )}
         <span className="flex-1">
-          <span className="block font-semibold">{selected ? selected.name : "Everyone"}</span>
-          <span className="block text-xs text-faint">
-            {selected ? (selected.department ?? "Colleague") : "The whole company will see this"}
+          <span className="block text-lg leading-tight font-extrabold">{selected ? selected.name : "everyone"}</span>
+          <span className="block text-sm text-muted">
+            {selected ? (selected.department ?? "coworker") : "the whole company sees this"}
           </span>
         </span>
-        <ChevronDown size={18} className={`text-faint transition ${open ? "rotate-180" : ""}`} />
+        <span className={`text-lg transition ${open ? "rotate-180" : ""}`}>👇</span>
       </button>
 
       {open && (
-        <div className="rise absolute inset-x-0 top-full z-30 mt-2 overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl shadow-black/10">
-          <div className="flex items-center gap-2 border-b border-line px-3.5">
-            <Search size={16} className="text-faint" />
+        <div className="pop-in brut absolute inset-x-0 top-full z-40 mt-3 overflow-hidden">
+          <div className="flex items-center gap-2 border-b-2 border-line px-4">
+            <span>🔍</span>
             <input
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search people or teams…"
-              className="w-full bg-transparent py-3 text-[15px] outline-none placeholder:text-faint"
+              placeholder="search the squad…"
+              className="w-full bg-transparent py-3.5 text-base font-medium outline-none placeholder:text-faint"
             />
           </div>
-          <ul className="max-h-72 overflow-y-auto p-1.5" role="listbox">
+          <ul className="max-h-72 overflow-y-auto p-2" role="listbox">
             {!query && (
               <Option active={value === "everyone"} onClick={() => pick("everyone")}>
-                <span className="grid size-8 place-items-center rounded-full bg-ink text-paper">
-                  <Megaphone size={15} />
-                </span>
+                <span className="grid size-9 place-items-center rounded-full border-2 border-line bg-blue">📣</span>
                 <span className="flex-1">
-                  <span className="block font-semibold">Everyone</span>
-                  <span className="block text-xs text-faint">Company-wide</span>
+                  <span className="block font-extrabold">everyone</span>
+                  <span className="block text-xs text-muted">company-wide announcement energy</span>
                 </span>
               </Option>
             )}
             {filtered.map((c) => (
               <Option key={c.id} active={value === c.id} onClick={() => pick(c.id)}>
-                <PersonAvatar name={c.name} size={32} />
+                <PersonAvatar name={c.name} size={36} />
                 <span className="flex-1">
-                  <span className="block font-medium">{c.name}</span>
-                  {c.department && <span className="block text-xs text-faint">{c.department}</span>}
+                  <span className="block font-bold">{c.name}</span>
+                  {c.department && <span className="block text-xs text-muted">{c.department}</span>}
                 </span>
               </Option>
             ))}
-            {filtered.length === 0 && <li className="px-3 py-6 text-center text-sm text-faint">No one matches “{query}”</li>}
+            {filtered.length === 0 && (
+              <li className="px-3 py-8 text-center text-sm text-muted">no one named “{query}” here 🕵️</li>
+            )}
           </ul>
         </div>
       )}
@@ -159,72 +161,150 @@ function Option({ active, onClick, children }: { active: boolean; onClick: () =>
       <button
         type="button"
         onClick={onClick}
-        className={`flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left text-[15px] transition hover:bg-sunken ${active ? "bg-sunken" : ""}`}
+        className={`flex w-full items-center gap-3 rounded-xl border-2 px-2.5 py-2 text-left transition ${
+          active ? "border-line bg-lime text-on-bright" : "border-transparent hover:border-line hover:bg-sunken"
+        }`}
       >
         {children}
-        {active && <Check size={16} className="text-accent" strokeWidth={2.6} />}
+        {active && <span>✅</span>}
       </button>
     </li>
   );
 }
 
+/** How the message is shaping up, in emoji. */
+function vibe(length: number, shouting: boolean): [string, string] {
+  if (shouting) return ["😤", "caps lock is cruise control for cool… maybe chill?"];
+  if (length === 0) return ["🤐", "cat got your tongue?"];
+  if (length < 5) return ["👀", "keep going…"];
+  if (length < 60) return ["✍️", "short & sweet"];
+  if (length < 280) return ["🔥", "now we're talking"];
+  if (length < 900) return ["📝", "detailed. love that"];
+  if (length < 1800) return ["📜", "ok novelist"];
+  return ["🫠", "almost at the limit"];
+}
+
+const SUCCESS_LINES = [
+  "tea has been spilled ☕",
+  "sent. you're lowkey a legend 🫡",
+  "delivered. your secret's safe 🤐",
+  "that was brave. proud of u 🥹",
+  "message yeeted anonymously 🚀",
+];
+
+const CONFETTI_BITS = ["🎉", "✨", "⭐", "💖", "☕", "🫶", "", "", "", "", "", ""];
+const CONFETTI_COLORS = ["var(--lime)", "var(--pink)", "var(--blue)", "var(--yellow)", "var(--lilac)", "var(--orange)"];
+
+function Confetti() {
+  const [pieces] = useState(() =>
+    Array.from({ length: 70 }, (_, i) => ({
+      bit: CONFETTI_BITS[i % CONFETTI_BITS.length],
+      color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+      left: 50 + (Math.random() - 0.5) * 20,
+      dx: `${(Math.random() - 0.5) * 900}px`,
+      dy: `${200 + Math.random() * 500}px`,
+      rot: `${(Math.random() - 0.5) * 900}deg`,
+      dur: `${1100 + Math.random() * 1100}ms`,
+      delay: `${Math.random() * 150}ms`,
+      size: 8 + Math.random() * 10,
+    })),
+  );
+  return (
+    <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden" aria-hidden>
+      {pieces.map((p, i) => (
+        <span
+          key={i}
+          className="confetti absolute top-[28%]"
+          style={{
+            left: `${p.left}%`,
+            ["--dx" as string]: p.dx,
+            ["--dy" as string]: p.dy,
+            ["--rot" as string]: p.rot,
+            ["--dur" as string]: p.dur,
+            animationDelay: p.delay,
+          }}
+        >
+          {p.bit ? (
+            <span style={{ fontSize: p.size + 10 }}>{p.bit}</span>
+          ) : (
+            <span
+              className="block border-2 border-[#0f0f0f]"
+              style={{ width: p.size, height: p.size * 0.6, background: p.color }}
+            />
+          )}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function SentScreen({ onAgain }: { onAgain: () => void }) {
+  const [line] = useState(() => SUCCESS_LINES[Math.floor(Math.random() * SUCCESS_LINES.length)]);
+  return (
+    <div className="brut relative flex flex-col items-center overflow-hidden !bg-lime px-6 py-16 text-center text-on-bright">
+      <Confetti />
+      <div className="bounce-in mb-5 text-7xl">🫖</div>
+      <h2 className="bounce-in w-full max-w-lg text-4xl leading-[0.95] font-extrabold tracking-tight text-balance sm:text-5xl" style={{ animationDelay: "120ms" }}>
+        {line}
+      </h2>
+      <p className="mt-3 max-w-sm text-[17px] font-medium">
+        they&apos;ll never know it was you. only super admins can see names 🤫
+      </p>
+      <div className="mt-8 flex flex-wrap justify-center gap-3">
+        <button className="btn bg-pink" onClick={onAgain}>spill more ☕</button>
+        <Link href="/sent" className="btn bg-surface !text-text">my receipts 🧾</Link>
+      </div>
+    </div>
+  );
+}
+
 export function Composer({ colleagues, categories }: { colleagues: Colleague[]; categories: readonly string[] }) {
   const [state, action, pending] = useActionState(sendFeedback, undefined);
-  const [length, setLength] = useState(0);
-  // The success result the user has already dismissed with "Write another".
+  const [text, setText] = useState("");
+  // The success result the user has already dismissed with "spill more".
   const [dismissed, setDismissed] = useState<FormState>(undefined);
+  const formRef = useRef<HTMLFormElement>(null);
 
   if (state?.success && state !== dismissed) {
     return (
-      <div className="rise panel flex flex-col items-center px-6 py-16 text-center">
-        <div className="mb-5 grid size-16 place-items-center rounded-full bg-(--cat-appreciation-soft) text-(--cat-appreciation)">
-          <Check size={30} strokeWidth={2.6} />
-        </div>
-        <h2 className="font-display text-3xl font-semibold">Sent. Anonymously.</h2>
-        <p className="mt-2 max-w-sm text-muted">
-          Thank you for speaking up. Your name stays hidden from everyone except super admins.
-        </p>
-        <div className="mt-8 flex gap-3">
-          <button
-            className="btn-primary"
-            onClick={() => {
-              setDismissed(state);
-              setLength(0);
-            }}
-          >
-            Write another
-          </button>
-          <Link href="/sent" className="btn-quiet !px-5 !py-2.5 !text-sm">See what you sent</Link>
-        </div>
-      </div>
+      <SentScreen
+        onAgain={() => {
+          setDismissed(state);
+          setText("");
+        }}
+      />
     );
   }
 
   const max = 2000;
-  const pct = Math.min(1, length / max);
+  const letters = text.replace(/[^a-z]/gi, "");
+  const shouting = letters.length > 12 && letters === letters.toUpperCase();
+  const [emoji, mood] = vibe(text.trim().length, shouting);
+  const pct = Math.min(1, text.length / max);
 
   return (
-    <form action={action} onReset={() => setLength(0)} className="panel overflow-hidden">
-      <div className="space-y-7 p-5 sm:p-7">
+    <form ref={formRef} action={action} onReset={() => setText("")} className="brut overflow-visible">
+      <div className="space-y-8 p-5 sm:p-7">
         <section>
-          <div className="eyebrow mb-2.5">1 · To</div>
+          <StepLabel n={1} color="var(--blue)">who&apos;s it for? 🎯</StepLabel>
           <RecipientPicker colleagues={colleagues} />
         </section>
 
         <section>
-          <div className="eyebrow mb-2.5">2 · What kind</div>
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+          <StepLabel n={2} color="var(--yellow)">what&apos;s the vibe?</StepLabel>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {categories.map((c, i) => {
-              const { icon: Icon, blurb } = CATEGORY_META[c] ?? CATEGORY_META.Other;
+              const m = CATEGORY_META[c] ?? CATEGORY_META.Other;
               return (
-                <label key={c} data-cat={c} className="cursor-pointer">
+                <label key={c} className="cursor-pointer">
                   <input type="radio" name="category" value={c} defaultChecked={i === 0} className="peer sr-only" />
-                  <span className="flex h-full flex-col gap-2 rounded-xl border border-line bg-surface p-3 transition peer-checked:border-(--c) peer-checked:bg-(--c-soft) peer-checked:[&_.ico]:bg-(--c) peer-checked:[&_.ico]:text-white peer-focus-visible:ring-4 peer-focus-visible:ring-ink/10 hover:border-ink/25">
-                    <span className="ico grid size-8 place-items-center rounded-lg bg-(--c-soft) text-(--c) transition">
-                      <Icon size={16} strokeWidth={2.4} />
-                    </span>
-                    <span className="text-sm font-semibold">{c}</span>
-                    <span className="text-xs leading-snug text-muted">{blurb}</span>
+                  <span
+                    className="press flex h-full flex-col items-start gap-1 rounded-xl border-2 border-line bg-surface p-3 shadow-[3px_3px_0_0_var(--line)] peer-checked:-rotate-2 peer-checked:bg-(--c) peer-checked:text-on-bright peer-checked:[&_.emo]:scale-125 peer-focus-visible:outline-4 peer-focus-visible:outline-pink"
+                    style={{ ["--c" as string]: m.color }}
+                  >
+                    <span className="emo text-3xl transition">{m.emoji}</span>
+                    <span className="text-[17px] font-extrabold">{m.label}</span>
+                    <span className="text-[13px] leading-snug opacity-75">{m.blurb}</span>
                   </span>
                 </label>
               );
@@ -233,42 +313,60 @@ export function Composer({ colleagues, categories }: { colleagues: Colleague[]; 
         </section>
 
         <section>
-          <div className="eyebrow mb-2.5">3 · Say it</div>
+          <StepLabel n={3} color="var(--pink)">say it (nicely) ✍️</StepLabel>
           <textarea
             name="message"
             maxLength={max}
             required
             rows={6}
-            placeholder="Be specific and kind. What happened, how did it land, and what would help?"
-            onChange={(e) => setLength(e.target.value.length)}
-            className="w-full resize-none rounded-xl border border-line bg-paper/60 p-4 font-display text-[19px] leading-relaxed outline-none transition placeholder:font-sans placeholder:text-[15px] placeholder:text-faint focus:border-ink/30 focus:bg-surface focus:ring-4 focus:ring-ink/5"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) formRef.current?.requestSubmit();
+            }}
+            placeholder="be specific, be real, be kind. what happened + what would make it a W?"
+            className="w-full resize-none rounded-xl border-2 border-line bg-sunken/60 p-4 text-[19px] leading-relaxed font-medium outline-none transition placeholder:text-base placeholder:font-normal placeholder:text-faint focus:bg-surface focus:shadow-[4px_4px_0_0_var(--pink)]"
           />
+          <div className="mt-2 flex items-center gap-2 text-sm font-bold">
+            <span key={emoji} className="bounce-in text-2xl">{emoji}</span>
+            <span className={shouting ? "text-coral" : "text-muted"}>{mood}</span>
+            <span className="ml-auto flex items-center gap-2 font-mono text-xs text-faint">
+              <span className="h-2.5 w-20 overflow-hidden rounded-full border-2 border-line bg-surface">
+                <span
+                  className="block h-full transition-all"
+                  style={{ width: `${pct * 100}%`, background: pct > 0.9 ? "var(--coral)" : "var(--lime)" }}
+                />
+              </span>
+              {text.length}/{max}
+            </span>
+          </div>
         </section>
 
         <Status state={state?.error ? state : undefined} />
       </div>
 
-      <div className="flex items-center gap-4 border-t border-line bg-sunken/50 px-5 py-4 sm:px-7">
-        <span className="flex items-center gap-2 text-xs text-muted">
-          <Lock size={14} /> Your name is hidden from the recipient
-        </span>
-        <span className="ml-auto flex items-center gap-2 text-xs tabular-nums text-faint">
-          <svg viewBox="0 0 20 20" className="size-5 -rotate-90">
-            <circle cx="10" cy="10" r="8" fill="none" stroke="var(--line)" strokeWidth="2.5" />
-            <circle
-              cx="10" cy="10" r="8" fill="none" strokeWidth="2.5" strokeLinecap="round"
-              stroke={pct > 0.9 ? "var(--accent)" : "var(--ink)"}
-              strokeOpacity={length ? 1 : 0}
-              strokeDasharray={`${pct * 50.3} 50.3`}
-            />
-          </svg>
-          <span className="hidden sm:inline">{length}/{max}</span>
-        </span>
-        <button className="btn-accent" disabled={pending || length < 5}>
-          {pending ? "Sending…" : <>Send <Send size={15} strokeWidth={2.4} /></>}
+      <div className="flex flex-wrap items-center gap-3 rounded-b-[13px] border-t-[2.5px] border-line bg-sunken px-5 py-4 sm:px-7">
+        <span className="text-sm font-bold">🕶️ you&apos;re incognito</span>
+        <span className="tag hidden text-faint sm:inline">⌘/ctrl + enter to send</span>
+        <button className="btn ml-auto bg-pink" disabled={pending || text.trim().length < 5}>
+          {pending ? "spilling…" : "spill it 🫖"}
         </button>
       </div>
     </form>
+  );
+}
+
+function StepLabel({ n, color, children }: { n: number; color: string; children: React.ReactNode }) {
+  return (
+    <div className="mb-3 flex items-center gap-2.5 text-lg font-extrabold">
+      <span
+        className="grid size-7 place-items-center rounded-full border-2 border-line font-mono text-sm text-on-bright"
+        style={{ background: color }}
+      >
+        {n}
+      </span>
+      {children}
+    </div>
   );
 }
 
@@ -280,15 +378,15 @@ export function ChangePasswordForm() {
   return (
     <form ref={ref} action={action} className="space-y-4">
       <div>
-        <label className="field-label" htmlFor="current">Current password</label>
+        <label className="field-label" htmlFor="current">current password</label>
         <input className="field" id="current" name="current" type="password" autoComplete="current-password" required />
       </div>
       <div>
-        <label className="field-label" htmlFor="next">New password</label>
+        <label className="field-label" htmlFor="next">new password (make it spicy 🌶️)</label>
         <input className="field" id="next" name="next" type="password" autoComplete="new-password" minLength={8} required />
       </div>
       <Status state={state} />
-      <button className="btn-primary" disabled={pending}>Update password</button>
+      <button className="btn bg-lime" disabled={pending}>update password 🔐</button>
     </form>
   );
 }
@@ -301,27 +399,27 @@ export function AddEmployeeForm() {
   return (
     <form ref={ref} action={action} className="grid gap-4 sm:grid-cols-2">
       <div>
-        <label className="field-label" htmlFor="name">Full name</label>
+        <label className="field-label" htmlFor="name">full name</label>
         <input className="field" id="name" name="name" placeholder="Ankita Sharma" required />
       </div>
       <div>
-        <label className="field-label" htmlFor="new-email">Work email</label>
+        <label className="field-label" htmlFor="new-email">work email</label>
         <input className="field" id="new-email" name="email" type="email" placeholder="ankita@company.com" required />
       </div>
       <div>
-        <label className="field-label" htmlFor="department">Team</label>
-        <input className="field" id="department" name="department" placeholder="Design (optional)" />
+        <label className="field-label" htmlFor="department">team</label>
+        <input className="field" id="department" name="department" placeholder="design (optional)" />
       </div>
       <div>
-        <label className="field-label" htmlFor="temp-password">Temporary password</label>
-        <input className="field" id="temp-password" name="password" minLength={8} placeholder="At least 8 characters" required />
+        <label className="field-label" htmlFor="temp-password">temp password</label>
+        <input className="field" id="temp-password" name="password" minLength={8} placeholder="8+ characters" required />
       </div>
-      <div className="sm:col-span-2 flex flex-wrap items-center gap-4">
-        <label className="flex cursor-pointer items-center gap-2.5 text-sm">
-          <input type="checkbox" name="role" value="admin" className="size-4 accent-(--accent)" />
-          Make super admin <span className="text-faint">(can see who wrote what)</span>
+      <div className="flex flex-wrap items-center gap-4 sm:col-span-2">
+        <label className="flex cursor-pointer items-center gap-2.5 text-sm font-bold">
+          <input type="checkbox" name="role" value="admin" className="size-5 accent-[#ff7ad9]" />
+          👑 make super admin <span className="font-normal text-muted">(sees who wrote what)</span>
         </label>
-        <button className="btn-primary ml-auto" disabled={pending}>Add person</button>
+        <button className="btn ml-auto bg-lime" disabled={pending}>add to squad ➕</button>
       </div>
       <div className="sm:col-span-2"><Status state={state} /></div>
     </form>
@@ -332,20 +430,16 @@ export function ResetPasswordForm({ id }: { id: number }) {
   const [state, action, pending] = useActionState(resetPassword, undefined);
   const ref = useResetOnSuccess(state);
   return (
-    <details className="group relative">
-      <summary className="btn-quiet cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-        <KeyRound size={13} /> {state?.success ? "Reset ✓" : "Password"}
+    <details className="relative">
+      <summary className="btn-sm cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+        🔑 {state?.success ? "reset ✅" : "password"}
       </summary>
-      <form
-        ref={ref}
-        action={action}
-        className="absolute right-0 z-20 mt-2 w-64 space-y-2 rounded-xl border border-line bg-surface p-3 shadow-2xl shadow-black/10"
-      >
+      <form ref={ref} action={action} className="pop-in brut absolute right-0 z-20 mt-3 w-64 space-y-2 p-3">
         <input type="hidden" name="id" value={id} />
-        <input className="field !py-2 !text-sm" name="password" placeholder="New temporary password" minLength={8} required />
-        <button className="btn-primary w-full !py-2" disabled={pending}>Set password</button>
-        {state?.error && <p className="text-xs text-accent">{state.error}</p>}
-        {state?.success && <p className="text-xs text-(--cat-appreciation)">Password updated.</p>}
+        <input className="field !py-2 !text-sm" name="password" placeholder="new temp password" minLength={8} required />
+        <button className="btn w-full bg-yellow !py-2 !text-sm" disabled={pending}>set it</button>
+        {state?.error && <p className="text-xs font-bold text-coral">{state.error}</p>}
+        {state?.success && <p className="text-xs font-bold">done ✅</p>}
       </form>
     </details>
   );

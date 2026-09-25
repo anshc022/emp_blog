@@ -31,7 +31,7 @@ export async function login(_: FormState, form: FormData): Promise<FormState> {
   const user = email ? getUserWithHash(email) : undefined;
 
   if (!user || !user.active || !(await bcrypt.compare(password, user.password_hash))) {
-    return { error: "Invalid email or password." };
+    return { error: "hmm, that email + password combo isn't it 🙅" };
   }
 
   await createSession(user.id);
@@ -50,12 +50,12 @@ export async function changePassword(_: FormState, form: FormData): Promise<Form
 
   const withHash = getUserWithHash(user.email);
   if (!withHash || !(await bcrypt.compare(current, withHash.password_hash))) {
-    return { error: "Current password is incorrect." };
+    return { error: "that's not your current password bestie 🫣" };
   }
-  if (next.length < 8) return { error: "New password must be at least 8 characters." };
+  if (next.length < 8) return { error: "new password needs 8+ characters 🔐" };
 
   db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(await bcrypt.hash(next, 10), user.id);
-  return { success: "Password updated." };
+  return { success: "password updated. you're secure now 🔒✨" };
 }
 
 /* -------------------------- Feedback -------------------------- */
@@ -66,21 +66,21 @@ export async function sendFeedback(_: FormState, form: FormData): Promise<FormSt
   const category = text(form, "category") as Category;
   const message = text(form, "message");
 
-  if (!CATEGORIES.includes(category)) return { error: "Pick a category." };
-  if (message.length < 5) return { error: "Write at least a few words." };
-  if (message.length > MAX_MESSAGE) return { error: `Keep it under ${MAX_MESSAGE} characters.` };
+  if (!CATEGORIES.includes(category)) return { error: "pick a vibe first 🎨" };
+  if (message.length < 5) return { error: "write at least a few words 🥲" };
+  if (message.length > MAX_MESSAGE) return { error: `ok novelist, keep it under ${MAX_MESSAGE} characters 📜` };
 
   let recipientId: number | null = null;
   if (to !== "everyone") {
     recipientId = Number(to);
     const recipient = Number.isInteger(recipientId) ? getUserById(recipientId) : undefined;
-    if (!recipient || !recipient.active) return { error: "Choose who the feedback is for." };
-    if (recipient.id === user.id) return { error: "You can't send feedback to yourself." };
+    if (!recipient || !recipient.active) return { error: "who's this for? pick someone 🎯" };
+    if (recipient.id === user.id) return { error: "you can't spill tea on yourself 💀" };
   }
 
   createFeedback({ authorId: user.id, recipientId, category, message });
   revalidatePath("/", "layout");
-  return { success: "Feedback sent anonymously. Thank you!" };
+  return { success: "tea spilled ☕" };
 }
 
 export async function toggleStar(feedbackId: number) {
@@ -100,26 +100,26 @@ export async function createEmployee(_: FormState, form: FormData): Promise<Form
   const password = String(form.get("password") ?? "");
   const role = form.get("role") === "admin" ? "admin" : "employee";
 
-  if (!name) return { error: "Name is required." };
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error: "Enter a valid email." };
-  if (password.length < 8) return { error: "Temporary password must be at least 8 characters." };
-  if (getUserWithHash(email)) return { error: "An account with that email already exists." };
+  if (!name) return { error: "they need a name 😅" };
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error: "that email looks sus 🤨" };
+  if (password.length < 8) return { error: "temp password needs 8+ characters 🔐" };
+  if (getUserWithHash(email)) return { error: "someone with that email is already in the squad 👀" };
 
   db.prepare(
     "INSERT INTO users (name, email, password_hash, role, department) VALUES (?, ?, ?, ?, ?)",
   ).run(name, email, await bcrypt.hash(password, 10), role, department);
 
   revalidatePath("/admin", "layout");
-  return { success: `Added ${name}. Share the temporary password with them privately.` };
+  return { success: `${name} joined the squad 🎉 send them the temp password privately` };
 }
 
 export async function resetPassword(_: FormState, form: FormData): Promise<FormState> {
   await requireAdmin();
   const id = Number(form.get("id"));
   const password = String(form.get("password") ?? "");
-  if (password.length < 8) return { error: "At least 8 characters." };
+  if (password.length < 8) return { error: "8+ characters pls" };
   db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(await bcrypt.hash(password, 10), id);
-  return { success: "Password reset." };
+  return { success: "password reset ✅" };
 }
 
 export async function toggleActive(form: FormData) {
