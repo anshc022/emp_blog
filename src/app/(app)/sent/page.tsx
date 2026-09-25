@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { PersonAvatar } from "@/components/avatar";
-import { EmptyState, FeedbackNote, PageHeader, StarCount, ToSticker, starLine } from "@/components/feedback-note";
+import { EmptyState, FeedbackNote, PageHeader, StarCount, starLine } from "@/components/feedback-note";
 import { listSent } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 
@@ -11,31 +11,34 @@ export default async function SentPage() {
 
   return (
     <>
-      <PageHeader tag="🧾 receipts" tagColor="var(--blue)" title={<>your <span className="grad-text">receipts</span> 🧾</>}>
-        only you can see this. recipients saw these as anonymous.
+      <PageHeader
+        title="sent"
+        right={
+          items.length > 0 && (
+            <div className="flex gap-6 text-right">
+              <div>
+                <div className="text-2xl font-semibold tabular-nums">{items.length}</div>
+                <div className="meta">notes</div>
+              </div>
+              <div>
+                <div className="text-2xl font-semibold tabular-nums">{stars}</div>
+                <div className="meta">stars farmed</div>
+              </div>
+            </div>
+          )
+        }
+      >
+        only you can see this. they saw it as anonymous.
       </PageHeader>
 
-      {items.length > 0 && (
-        <div className="mb-8 grid grid-cols-2 gap-4">
-          <div className="brut-sm pop-in bg-pink p-5 text-on-bright">
-            <div className="text-4xl font-extrabold">{items.length}</div>
-            <div className="font-bold">notes spilled ☕</div>
-          </div>
-          <div className="brut-sm pop-in bg-yellow p-5 text-on-bright" style={{ animationDelay: "80ms" }}>
-            <div className="text-4xl font-extrabold">{stars}</div>
-            <div className="font-bold">stars farmed ⭐</div>
-          </div>
-        </div>
-      )}
-
       {items.length === 0 ? (
-        <EmptyState emoji="🤐" title="you haven't spilled anything yet">
-          <Link href="/give" data-sound="open" className="grad-text font-extrabold">
-            write your first note →
+        <EmptyState emoji="🤐" title="nothing sent yet">
+          <Link href="/give" data-sound="open" className="text-text underline underline-offset-4">
+            write your first note
           </Link>
         </EmptyState>
       ) : (
-        <div className="space-y-6">
+        <div className="border-t border-line pt-4">
           {items.map((f, i) => (
             <FeedbackNote
               key={f.id}
@@ -45,17 +48,17 @@ export default async function SentPage() {
               createdAt={f.created_at}
               avatar={
                 f.recipient_name ? (
-                  <PersonAvatar name={f.recipient_name} size={44} />
+                  <PersonAvatar name={f.recipient_name} />
                 ) : (
-                  <span className="grid size-11 place-items-center rounded-full border-2 border-white/80 dark:border-white/15 bg-blue text-xl">📣</span>
+                  <span className="grid size-9 shrink-0 place-items-center rounded-full border border-line bg-subtle text-sm">📣</span>
                 )
               }
-              from="you (incognito 🕶️)"
-              to={<ToSticker to={f.recipient_name ?? "everyone"} />}
+              from="you, incognito 🕶️"
+              to={f.recipient_name ?? "everyone"}
               footer={
                 <>
-                  <span className="text-sm font-semibold text-muted">{starLine(f.star_count)}</span>
                   <StarCount count={f.star_count} />
+                  <span className="text-[13px] text-faint">{starLine(f.star_count)}</span>
                 </>
               }
             />

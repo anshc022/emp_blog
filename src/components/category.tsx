@@ -1,21 +1,26 @@
 // Display layer for categories. The database keeps the plain names
 // (Appreciation, Suggestion, Concern, Other); this maps them to the vibe.
-export const CATEGORY_META: Record<string, { label: string; emoji: string; blurb: string; color: string }> = {
-  Appreciation: { label: "props", emoji: "🙌", blurb: "hype someone up", color: "var(--lime)" },
-  Suggestion: { label: "big idea", emoji: "💡", blurb: "galaxy-brain moment", color: "var(--yellow)" },
-  Concern: { label: "red flag", emoji: "🚩", blurb: "something's off fr", color: "var(--coral)" },
-  Other: { label: "random", emoji: "🫠", blurb: "just vibes, anything", color: "var(--lilac)" },
+export const CATEGORY_META: Record<string, { label: string; blurb: string; color: string }> = {
+  Appreciation: { label: "props", blurb: "hype someone up", color: "var(--c-props)" },
+  Suggestion: { label: "idea", blurb: "galaxy-brain moment", color: "var(--c-idea)" },
+  Concern: { label: "red flag", blurb: "something's off", color: "var(--c-flag)" },
+  Other: { label: "random", blurb: "just vibes", color: "var(--c-random)" },
 };
 
 export function meta(category: string) {
   return CATEGORY_META[category] ?? CATEGORY_META.Other;
 }
 
-export function CategorySticker({ category, tilt = 0 }: { category: string; tilt?: number }) {
+export function Dot({ color, size = 8 }: { color: string; size?: number }) {
+  return <span className="inline-block shrink-0 rounded-full" style={{ width: size, height: size, background: color }} aria-hidden />;
+}
+
+export function CategoryTag({ category }: { category: string }) {
   const m = meta(category);
   return (
-    <span className="sticker" style={{ background: m.color, rotate: `${tilt}deg` }}>
-      <span aria-hidden>{m.emoji}</span> {m.label}
+    <span className="inline-flex items-center gap-1.5 text-[13px] text-muted">
+      <Dot color={m.color} />
+      {m.label}
     </span>
   );
 }

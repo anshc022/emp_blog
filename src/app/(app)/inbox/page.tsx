@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AnonAvatar } from "@/components/avatar";
-import { EmptyState, FeedbackNote, PageHeader, ToSticker, starLine } from "@/components/feedback-note";
+import { EmptyState, FeedbackNote, PageHeader, starLine } from "@/components/feedback-note";
 import { persona } from "@/components/persona";
 import { Segmented } from "@/components/segmented";
 import { StarButton } from "@/components/star-button";
@@ -25,40 +25,39 @@ export default async function InboxPage(props: PageProps<"/inbox">) {
 
   return (
     <>
-      <PageHeader tag="📥 inbox" title={<>what&apos;s the tea, <span className="grad-text">{user.name.split(" ")[0].toLowerCase()}</span>? ☕</>}>
-        everything here is anonymous. star the ones that hit ⭐ and the best takes float to the top.
+      <PageHeader title={<>what&apos;s the tea, {user.name.split(" ")[0].toLowerCase()}?</>}>
+        everything here is anonymous. star what hits and it floats to the top.
       </PageHeader>
 
-      <div className="mb-7 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-2 flex items-center justify-between gap-4 border-b border-line">
         <Segmented
           value={view}
           hrefFor={(v) => href({ view: v })}
           options={[
             { value: "all", label: "all", count: (counts.mine ?? 0) + (counts.company ?? 0) },
-            { value: "mine", label: "for you 🫵", count: counts.mine ?? 0 },
-            { value: "company", label: "company 📣", count: counts.company ?? 0 },
+            { value: "mine", label: "for you", count: counts.mine ?? 0 },
+            { value: "company", label: "everyone", count: counts.company ?? 0 },
           ]}
         />
         <Segmented
           value={sort}
-          color="var(--grad-cool)"
           hrefFor={(v) => href({ sort: v })}
           options={[
-            { value: "new", label: "fresh 🆕" },
-            { value: "top", label: "top ⭐" },
+            { value: "new", label: "new" },
+            { value: "top", label: "top" },
           ]}
         />
       </div>
 
       {items.length === 0 ? (
         <EmptyState emoji="🦗" title="it's giving… empty">
-          no tea here yet. suspicious. be the main character and{" "}
-          <Link href="/give" data-sound="open" className="grad-text font-extrabold">
-            spill first →
+          no tea yet. suspicious.{" "}
+          <Link href="/give" data-sound="open" className="text-text underline underline-offset-4">
+            be the first
           </Link>
         </EmptyState>
       ) : (
-        <div className="space-y-6">
+        <>
           {items.map((f, i) => (
             <FeedbackNote
               key={f.id}
@@ -68,17 +67,17 @@ export default async function InboxPage(props: PageProps<"/inbox">) {
               createdAt={f.created_at}
               avatar={<AnonAvatar seed={f.id} />}
               from={persona(f.id).name}
-              to={<ToSticker to={f.to_everyone ? "everyone" : "you"} />}
+              to={f.to_everyone ? "everyone" : <span className="font-medium text-text">you</span>}
               footer={
                 <>
-                  <span className="text-sm font-semibold text-muted">{starLine(f.star_count)}</span>
                   <StarButton id={f.id} count={f.star_count} starred={!!f.starred} />
+                  <span className="text-[13px] text-faint">{starLine(f.star_count)}</span>
                 </>
               }
             />
           ))}
-          <p className="pt-4 text-center text-sm font-bold text-faint">you&apos;re all caught up ✨ touch grass maybe? 🌱</p>
-        </div>
+          <p className="pt-10 text-center text-[13px] text-faint">that&apos;s all. go touch grass 🌱</p>
+        </>
       )}
     </>
   );

@@ -4,8 +4,6 @@ import { useOptimistic, useState, useTransition } from "react";
 import { toggleStar } from "@/lib/actions";
 import { play } from "@/lib/sound";
 
-const BITS = ["⭐", "✨", "💖", "⭐", "🔥", "✨", "⭐", "💫"];
-
 export function StarButton({ id, count, starred }: { id: number; count: number; starred: boolean }) {
   const [optimistic, setOptimistic] = useOptimistic({ count, starred });
   const [, startTransition] = useTransition();
@@ -28,28 +26,23 @@ export function StarButton({ id, count, starred }: { id: number; count: number; 
       aria-pressed={optimistic.starred}
       aria-label={optimistic.starred ? "Unstar" : "Star"}
       title={optimistic.starred ? "un-star" : "star it if you felt this"}
-      className={`group press relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-[15px] font-extrabold tabular-nums ${
-        optimistic.starred
-          ? "text-white shadow-[0_10px_24px_-8px_rgb(255_79_154/0.7)]"
-          : "border border-line bg-surface-strong text-text hover:border-hot/40"
+      className={`group inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-medium tabular-nums transition active:scale-95 ${
+        optimistic.starred ? "border-text text-text" : "border-line text-muted hover:border-text/30 hover:text-text"
       }`}
-      style={optimistic.starred ? { backgroundImage: "var(--grad)" } : undefined}
     >
-      <span className="relative inline-block leading-none">
+      <span className="relative inline-block">
         {optimistic.starred && burst > 0 && (
           <span key={burst} aria-hidden>
-            {BITS.map((b, i) => (
+            {Array.from({ length: 6 }, (_, i) => (
               <span
                 key={i}
-                className="particle pointer-events-none absolute top-1/2 left-1/2 text-[13px]"
-                style={{ ["--a" as string]: `${i * 45}deg` }}
-              >
-                {b}
-              </span>
+                className="particle pointer-events-none absolute top-1/2 left-1/2 size-1 rounded-full bg-star"
+                style={{ ["--a" as string]: `${i * 60}deg` }}
+              />
             ))}
           </span>
         )}
-        <span key={burst} className={`inline-block ${optimistic.starred ? "star-smash" : ""}`}>
+        <span key={burst} className={`block ${optimistic.starred ? "star-pop" : ""}`}>
           <StarIcon filled={optimistic.starred} />
         </span>
       </span>
@@ -58,14 +51,14 @@ export function StarButton({ id, count, starred }: { id: number; count: number; 
   );
 }
 
-export function StarIcon({ filled, size = 18 }: { filled: boolean; size?: number }) {
+export function StarIcon({ filled, size = 15 }: { filled: boolean; size?: number }) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden className="block">
       <path
         d="M12 2.6l2.85 5.95 6.55.85-4.8 4.55 1.22 6.5L12 17.3l-5.82 3.15 1.22-6.5-4.8-4.55 6.55-.85z"
-        className={filled ? "fill-current" : "fill-transparent transition group-hover:fill-[#ffcc4d]"}
-        stroke="currentColor"
-        strokeWidth="2.2"
+        fill={filled ? "var(--star)" : "none"}
+        stroke={filled ? "var(--star)" : "currentColor"}
+        strokeWidth="2"
         strokeLinejoin="round"
       />
     </svg>

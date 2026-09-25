@@ -54,9 +54,9 @@ export function MuteToggle({ className = "" }: { className?: string }) {
       aria-pressed={!muted}
       aria-label={muted ? "Turn sounds on" : "Mute sounds"}
       title={muted ? "sounds off" : "sounds on"}
-      className={`btn-sm ${className}`}
+      className={`btn-ghost !px-2.5 ${className}`}
     >
-      {muted ? "🔇" : "🔊"}
+      {muted ? "sound off" : "sound on"}
     </button>
   );
 }

@@ -1,6 +1,6 @@
 # spill. ☕
 
-*spill the tea. anonymously.* An internal, **anonymous** feedback app for the whole company, with a dreamy, playful Gen Z "aura" look: animated gradient glow, frosted glass, candy pastels.
+*spill the tea. anonymously.* An internal, **anonymous** feedback app for the whole company, Minimal black & white design with small pops of colour, and a funny voice.
 
 - Any employee can send feedback to **one colleague** or to **everyone**.
 - Recipients **never** see who wrote it. Their inbox only shows "Anonymous".
@@ -14,15 +14,15 @@
 | Employee | Read their inbox (filter: All / For you / Company, sort: Newest / Top), star notes, write feedback, see what they sent and how many stars it got, change password |
 | Super admin | Everything above, plus see **all** feedback with author names, filter by sender/recipient, sort by stars, delete messages, add employees, reset passwords, promote/demote admins, deactivate accounts |
 
-Feedback vibes: props 🙌, big idea 💡, red flag 🚩, random 🫠 (stored as Appreciation / Suggestion / Concern / Other).
+Feedback vibes: props, idea, red flag, random, each marked with a small coloured dot (stored as Appreciation / Suggestion / Concern / Other).
 
-UX details: confetti when you send, a live "vibe meter" while you type (it even notices ALL CAPS), ⌘/Ctrl+Enter to send, a star button with an emoji burst, a stats ticker, dark mode, and a phone-friendly bottom dock.
+UX details: confetti when you send, a live "vibe meter" while you type (it even notices ALL CAPS), ⌘/Ctrl+Enter to send, a star button that pops yellow, and dark mode.
 
-Sound effects: every interaction has a tiny synthesized sound (no audio files, Web Audio API): taps, tabs, opening menus, picking a person or vibe, soft typing ticks, starring (sparkle) and un-starring, send (whoosh + chime), confetti party, errors, successes, a login chime, a goodbye jingle and a delete swoosh. There's a 🔊/🔇 toggle in the sidebar and mobile header, saved per browser. Sounds live in `src/lib/sound.ts`; any element can opt in with `data-sound="tap"`.
+Sound effects: every interaction has a tiny synthesized sound (no audio files, Web Audio API): taps, tabs, opening menus, picking a person or vibe, soft typing ticks, starring (sparkle) and un-starring, send (whoosh + chime), confetti party, errors, successes, a login chime, a goodbye jingle and a delete swoosh. There's a sound on/off toggle in the top bar, saved per browser. Sounds live in `src/lib/sound.ts`; any element can opt in with `data-sound="tap"`.
 
 ## Tech
 
-Next.js 16 (App Router, Server Actions) · Tailwind CSS 4 · Bricolage Grotesque + Space Mono (self-hosted) · SQLite (`better-sqlite3`) · signed-cookie sessions (`jose`) · `bcryptjs` password hashing.
+Next.js 16 (App Router, Server Actions) · Tailwind CSS 4 · Geist + Geist Mono (self-hosted) · SQLite (`better-sqlite3`) · signed-cookie sessions (`jose`) · `bcryptjs` password hashing.
 
 Anonymity is enforced on the server: the employee-facing queries in `src/lib/db.ts` never select the author,
 so the name cannot reach an employee's browser. Only the admin pages, which are guarded by `requireAdmin()`, join the author.

@@ -1,12 +1,12 @@
-import { colorFor, persona } from "./persona";
+import { persona } from "./persona";
 
 /** Per-message anonymous critter avatar. */
-export function AnonAvatar({ seed, size = 44 }: { seed: number; size?: number }) {
+export function AnonAvatar({ seed, size = 36 }: { seed: number; size?: number }) {
   const p = persona(seed);
   return (
     <span
-      className="hover-wiggle grid shrink-0 place-items-center rounded-full border-2 border-white/90 shadow-[0_6px_16px_-6px_var(--glow)] dark:border-white/20"
-      style={{ width: size, height: size, background: p.color, fontSize: size * 0.52, ["--r" as string]: "10deg" }}
+      className="hover-wobble grid shrink-0 place-items-center rounded-full border border-line bg-subtle"
+      style={{ width: size, height: size, fontSize: size * 0.5 }}
       aria-label={p.name}
       role="img"
     >
@@ -15,7 +15,7 @@ export function AnonAvatar({ seed, size = 44 }: { seed: number; size?: number })
   );
 }
 
-export function PersonAvatar({ name, size = 40 }: { name: string; size?: number }) {
+export function PersonAvatar({ name, size = 36 }: { name: string; size?: number }) {
   const initials = name
     .split(/\s+/)
     .map((p) => p[0])
@@ -24,8 +24,8 @@ export function PersonAvatar({ name, size = 40 }: { name: string; size?: number 
     .toUpperCase();
   return (
     <span
-      className="grid shrink-0 place-items-center rounded-full border-2 border-white/90 font-extrabold text-on-bright shadow-[0_6px_16px_-6px_var(--glow)] dark:border-white/20"
-      style={{ width: size, height: size, fontSize: size * 0.36, background: colorFor(name) }}
+      className="grid shrink-0 place-items-center rounded-full bg-inverse font-medium text-on-inverse"
+      style={{ width: size, height: size, fontSize: size * 0.36 }}
       aria-hidden
     >
       {initials}
