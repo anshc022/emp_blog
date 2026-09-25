@@ -1,3 +1,6 @@
+import { ShieldCheck, UserPlus } from "lucide-react";
+import { PersonAvatar } from "@/components/avatar";
+import { PageHeader } from "@/components/feedback-note";
 import { AddEmployeeForm, ResetPasswordForm } from "@/components/forms";
 import { toggleActive, toggleRole } from "@/lib/actions";
 import { listUsers } from "@/lib/db";
@@ -6,66 +9,65 @@ import { requireAdmin } from "@/lib/session";
 export default async function EmployeesPage() {
   const admin = await requireAdmin();
   const users = listUsers();
+  const active = users.filter((u) => u.active).length;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold">Employees</h1>
-        <p className="text-sm text-zinc-500">Add people, reset passwords, and manage super admins.</p>
-      </div>
+    <>
+      <PageHeader eyebrow="Super admin" title="People">
+        {active} active {active === 1 ? "person" : "people"}. Add teammates, reset passwords and choose who can see authors.
+      </PageHeader>
 
-      <div className="card">
-        <h2 className="mb-4 font-medium">Add employee</h2>
-        <AddEmployeeForm />
-      </div>
+      <details className="panel group mb-8 overflow-hidden" open={users.length < 3}>
+        <summary className="flex cursor-pointer list-none items-center gap-3 p-5 [&::-webkit-details-marker]:hidden">
+          <span className="grid size-9 place-items-center rounded-xl bg-accent text-accent-ink"><UserPlus size={17} /></span>
+          <span className="flex-1 font-semibold">Add a person</span>
+          <span className="text-sm text-muted group-open:hidden">Open</span>
+        </summary>
+        <div className="border-t border-line p-5 sm:p-6"><AddEmployeeForm /></div>
+      </details>
 
-      <div className="card overflow-x-auto !p-0">
-        <table className="w-full text-sm">
-          <thead className="border-b border-zinc-200 bg-zinc-50 text-left text-xs uppercase text-zinc-500">
-            <tr>
-              <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Role</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Password</th>
-              <th className="px-4 py-3"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-100">
-            {users.map((u) => {
-              const self = u.id === admin.id;
-              return (
-                <tr key={u.id} className={u.active ? "" : "opacity-50"}>
-                  <td className="px-4 py-3">
-                    <div className="font-medium">{u.name}{self && " (you)"}</div>
-                    <div className="text-xs text-zinc-500">
-                      {u.email}{u.department ? ` · ${u.department}` : ""}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">{u.role === "admin" ? "Super admin" : "Employee"}</td>
-                  <td className="px-4 py-3">{u.active ? "Active" : "Deactivated"}</td>
-                  <td className="px-4 py-3"><ResetPasswordForm id={u.id} /></td>
-                  <td className="px-4 py-3">
-                    {!self && (
-                      <div className="flex justify-end gap-2">
-                        <form action={toggleRole}>
-                          <input type="hidden" name="id" value={u.id} />
-                          <button className="btn-ghost whitespace-nowrap">
-                            {u.role === "admin" ? "Make employee" : "Make admin"}
-                          </button>
-                        </form>
-                        <form action={toggleActive}>
-                          <input type="hidden" name="id" value={u.id} />
-                          <button className="btn-ghost">{u.active ? "Deactivate" : "Reactivate"}</button>
-                        </form>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
+      <ul className="panel divide-y divide-line">
+        {users.map((u) => {
+          const self = u.id === admin.id;
+          return (
+            <li key={u.id} className={`flex flex-wrap items-center gap-x-4 gap-y-3 p-4 sm:px-5 ${u.active ? "" : "opacity-55"}`}>
+              <PersonAvatar name={u.name} size={40} />
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-semibold">{u.name}</span>
+                  {self && <span className="text-xs text-faint">(you)</span>}
+                  {u.role === "admin" && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-ink px-2 py-0.5 text-[11px] font-semibold text-paper">
+                      <ShieldCheck size={11} /> Super admin
+                    </span>
+                  )}
+                  {!u.active && (
+                    <span className="rounded-full bg-sunken px-2 py-0.5 text-[11px] font-semibold text-muted">Deactivated</span>
+                  )}
+                </div>
+                <div className="truncate text-sm text-muted">
+                  {u.email}{u.department ? ` · ${u.department}` : ""}
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <ResetPasswordForm id={u.id} />
+                {!self && (
+                  <>
+                    <form action={toggleRole}>
+                      <input type="hidden" name="id" value={u.id} />
+                      <button className="btn-quiet">{u.role === "admin" ? "Remove admin" : "Make admin"}</button>
+                    </form>
+                    <form action={toggleActive}>
+                      <input type="hidden" name="id" value={u.id} />
+                      <button className="btn-quiet">{u.active ? "Deactivate" : "Reactivate"}</button>
+                    </form>
+                  </>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </>
   );
 }

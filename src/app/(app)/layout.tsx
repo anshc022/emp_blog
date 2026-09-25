@@ -1,42 +1,33 @@
-import { NavLinks } from "@/components/nav-links";
-import { logout } from "@/lib/actions";
+import { MobileNav, Sidebar, type NavItem } from "@/components/app-nav";
+import { countInbox } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const user = await requireUser();
+  const counts = countInbox(user.id);
 
-  const links = [
-    { href: "/inbox", label: "Inbox" },
-    { href: "/give", label: "Give feedback" },
-    { href: "/sent", label: "Sent" },
-    ...(user.role === "admin"
-      ? [
-          { href: "/admin", label: "All feedback" },
-          { href: "/admin/employees", label: "Employees" },
-        ]
-      : []),
+  const items: NavItem[] = [
+    { href: "/inbox", label: "Inbox", icon: "inbox", badge: counts.recent ?? 0 },
+    { href: "/give", label: "Write", icon: "give" },
+    { href: "/sent", label: "Sent", icon: "sent" },
   ];
+  const adminItems: NavItem[] =
+    user.role === "admin"
+      ? [
+          { href: "/admin", label: "All feedback", icon: "admin" },
+          { href: "/admin/employees", label: "People", icon: "people" },
+        ]
+      : [];
+
+  const who = { name: user.name, email: user.email, role: user.role };
 
   return (
-    <>
-      <header className="border-b border-zinc-200 bg-white">
-        <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-3 px-4 py-3">
-          <span className="font-semibold">Feedback Channel</span>
-          <NavLinks links={links} />
-          <div className="ml-auto flex items-center gap-3 text-sm">
-            <a href="/account" className="text-zinc-600 hover:text-zinc-900">
-              {user.name}
-              {user.role === "admin" && (
-                <span className="ml-1 rounded bg-indigo-100 px-1.5 py-0.5 text-xs text-indigo-700">admin</span>
-              )}
-            </a>
-            <form action={logout}>
-              <button className="btn-ghost">Log out</button>
-            </form>
-          </div>
-        </div>
-      </header>
-      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8">{children}</main>
-    </>
+    <div className="flex min-h-dvh">
+      <Sidebar items={items} adminItems={adminItems} user={who} />
+      <div className="min-w-0 flex-1">
+        <MobileNav items={[...items, ...adminItems.slice(0, 1)]} user={who} />
+        <main className="mx-auto w-full max-w-3xl px-4 pt-8 pb-32 sm:px-8 lg:pt-14 lg:pb-16">{children}</main>
+      </div>
+    </div>
   );
 }

@@ -1,26 +1,30 @@
-# Feedback Channel
+# Candor
 
-An internal, **anonymous** feedback app for the whole company.
+*Say the thing. Kindly.* An internal, **anonymous** feedback app for the whole company.
 
 - Any employee can send feedback to **one colleague** or to **everyone**.
 - Recipients **never** see who wrote it. Their inbox only shows "Anonymous".
+- Anyone can **★ star** the notes they can see; sort by **Top** to see what resonates most.
 - **Super admins** see everything, including who wrote each message and who it was for.
 
 ## Features
 
 | Who | Can do |
 | --- | --- |
-| Employee | Read their inbox (feedback to them + to everyone), give feedback, see what they sent, change password |
-| Super admin | Everything above, plus see **all** feedback with author names, filter by sender/recipient, delete messages, add employees, reset passwords, promote/demote admins, deactivate accounts |
+| Employee | Read their inbox (filter: All / For you / Company, sort: Newest / Top), star notes, write feedback, see what they sent and how many stars it got, change password |
+| Super admin | Everything above, plus see **all** feedback with author names, filter by sender/recipient, sort by stars, delete messages, add employees, reset passwords, promote/demote admins, deactivate accounts |
 
 Feedback categories: Appreciation, Suggestion, Concern, Other.
 
 ## Tech
 
-Next.js 16 (App Router, Server Actions) · Tailwind CSS 4 · SQLite (`better-sqlite3`) · signed-cookie sessions (`jose`) · `bcryptjs` password hashing.
+Next.js 16 (App Router, Server Actions) · Tailwind CSS 4 · Fraunces + Inter Tight (self-hosted) · lucide icons · SQLite (`better-sqlite3`) · signed-cookie sessions (`jose`) · `bcryptjs` password hashing.
 
 Anonymity is enforced on the server: the employee-facing queries in `src/lib/db.ts` never select the author,
 so the name cannot reach an employee's browser. Only the admin pages, which are guarded by `requireAdmin()`, join the author.
+
+The UI follows the system light/dark setting and works on phones (bottom tab bar) as well as desktop (sidebar).
+To rename the app, change `APP_NAME` in `src/components/brand.tsx`.
 
 ## Getting started
 

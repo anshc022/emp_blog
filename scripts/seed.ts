@@ -1,7 +1,7 @@
 // Adds demo employees and sample feedback so you can try the app locally.
 // Run with: npm run seed
 import bcrypt from "bcryptjs";
-import { createFeedback, db, getUserWithHash } from "../src/lib/db";
+import { createFeedback, db, getUserWithHash, toggleStar } from "../src/lib/db";
 
 const password = bcrypt.hashSync("password123", 10);
 const people = [
@@ -38,6 +38,21 @@ if (count === 0) {
     category: "Concern",
     message: "Release notes often arrive after launch, which makes it hard to plan campaigns.",
   });
+  createFeedback({
+    authorId: id("arjun@company.com"),
+    recipientId: null,
+    category: "Appreciation",
+    message: "Shout-out to whoever restocked the good coffee. Mornings are better now.",
+  });
+
+  // A few stars on the company-wide notes.
+  const [suggestion, , , coffee] = (
+    db.prepare("SELECT id FROM feedback ORDER BY id").all() as { id: number }[]
+  ).map((r) => r.id);
+  for (const email of ["rahul@company.com", "priya@company.com", "arjun@company.com"]) {
+    toggleStar(id(email), suggestion);
+  }
+  for (const email of ["ankita@company.com", "rahul@company.com"]) toggleStar(id(email), coffee);
 }
 
 console.log(`Seeded ${people.length} employees (password: password123).`);

@@ -54,6 +54,13 @@ function open() {
       created_at   TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS stars (
+      user_id     INTEGER NOT NULL REFERENCES users(id),
+      feedback_id INTEGER NOT NULL REFERENCES feedback(id) ON DELETE CASCADE,
+      created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (user_id, feedback_id)
+    );
+
     CREATE INDEX IF NOT EXISTS feedback_recipient ON feedback(recipient_id);
     CREATE INDEX IF NOT EXISTS feedback_author ON feedback(author_id);
   `);
@@ -112,6 +119,8 @@ export type AnonymousFeedback = {
   message: string;
   created_at: string;
   to_everyone: number;
+  star_count: number;
+  starred: number;
 };
 
 export type SentFeedback = {
@@ -120,9 +129,11 @@ export type SentFeedback = {
   message: string;
   created_at: string;
   recipient_name: string | null;
+  star_count: number;
 };
 
 export type AdminFeedback = SentFeedback & {
+  starred: number;
   author_id: number;
   author_name: string;
   author_email: string;
@@ -140,22 +151,66 @@ export function createFeedback(input: {
   ).run(input.authorId, input.recipientId, input.category, input.message);
 }
 
+export type InboxView = "all" | "mine" | "company";
+export type InboxSort = "new" | "top";
+
+const STAR_COUNT = "(SELECT COUNT(*) FROM stars s WHERE s.feedback_id = f.id)";
+const STARRED_BY = "EXISTS (SELECT 1 FROM stars s WHERE s.feedback_id = f.id AND s.user_id = ?)";
+
 /** Feedback addressed to this user or to everyone, excluding what they wrote themselves. */
-export function listInbox(userId: number) {
+export function listInbox(userId: number, view: InboxView = "all", sort: InboxSort = "new") {
+  const scope = {
+    all: "(f.recipient_id = @user OR f.recipient_id IS NULL)",
+    mine: "f.recipient_id = @user",
+    company: "f.recipient_id IS NULL",
+  }[view];
+  const order = sort === "top" ? "star_count DESC, f.created_at DESC" : "f.created_at DESC, f.id DESC";
   return db
     .prepare(
-      `SELECT id, category, message, created_at, (recipient_id IS NULL) AS to_everyone
-         FROM feedback
-        WHERE (recipient_id = ? OR recipient_id IS NULL) AND author_id != ?
-        ORDER BY created_at DESC, id DESC`,
+      `SELECT f.id, f.category, f.message, f.created_at, (f.recipient_id IS NULL) AS to_everyone,
+              ${STAR_COUNT} AS star_count,
+              EXISTS (SELECT 1 FROM stars s WHERE s.feedback_id = f.id AND s.user_id = @user) AS starred
+         FROM feedback f
+        WHERE ${scope} AND f.author_id != @user
+        ORDER BY ${order}`,
     )
-    .all(userId, userId) as AnonymousFeedback[];
+    .all({ user: userId }) as AnonymousFeedback[];
+}
+
+export function countInbox(userId: number) {
+  return db
+    .prepare(
+      `SELECT
+         SUM(recipient_id = ?)          AS mine,
+         SUM(recipient_id IS NULL)      AS company,
+         SUM(created_at >= datetime('now', '-7 days')) AS recent
+         FROM feedback
+        WHERE (recipient_id = ? OR recipient_id IS NULL) AND author_id != ?`,
+    )
+    .get(userId, userId, userId) as { mine: number | null; company: number | null; recent: number | null };
+}
+
+/** Whether a user may see (and therefore star) a piece of feedback. */
+export function canSeeFeedback(user: User, feedbackId: number) {
+  if (user.role === "admin") return true;
+  const row = db
+    .prepare("SELECT 1 FROM feedback WHERE id = ? AND (recipient_id = ? OR recipient_id IS NULL OR author_id = ?)")
+    .get(feedbackId, user.id, user.id);
+  return Boolean(row);
+}
+
+export function toggleStar(userId: number, feedbackId: number) {
+  const removed = db.prepare("DELETE FROM stars WHERE user_id = ? AND feedback_id = ?").run(userId, feedbackId);
+  if (removed.changes === 0) {
+    db.prepare("INSERT INTO stars (user_id, feedback_id) VALUES (?, ?)").run(userId, feedbackId);
+  }
 }
 
 export function listSent(userId: number) {
   return db
     .prepare(
-      `SELECT f.id, f.category, f.message, f.created_at, r.name AS recipient_name
+      `SELECT f.id, f.category, f.message, f.created_at, r.name AS recipient_name,
+              ${STAR_COUNT} AS star_count
          FROM feedback f
          LEFT JOIN users r ON r.id = f.recipient_id
         WHERE f.author_id = ?
@@ -164,9 +219,12 @@ export function listSent(userId: number) {
     .all(userId) as SentFeedback[];
 }
 
-export function listAllFeedback(filter: { authorId?: number; recipientId?: number | "everyone" } = {}) {
+export function listAllFeedback(
+  adminId: number,
+  filter: { authorId?: number; recipientId?: number | "everyone"; sort?: InboxSort } = {},
+) {
   const where: string[] = [];
-  const params: (number | string)[] = [];
+  const params: (number | string)[] = [adminId];
   if (filter.authorId) {
     where.push("f.author_id = ?");
     params.push(filter.authorId);
@@ -180,12 +238,13 @@ export function listAllFeedback(filter: { authorId?: number; recipientId?: numbe
   return db
     .prepare(
       `SELECT f.id, f.category, f.message, f.created_at, f.author_id, f.recipient_id,
-              a.name AS author_name, a.email AS author_email, r.name AS recipient_name
+              a.name AS author_name, a.email AS author_email, r.name AS recipient_name,
+              ${STAR_COUNT} AS star_count, ${STARRED_BY} AS starred
          FROM feedback f
          JOIN users a ON a.id = f.author_id
          LEFT JOIN users r ON r.id = f.recipient_id
         ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
-        ORDER BY f.created_at DESC, f.id DESC`,
+        ORDER BY ${filter.sort === "top" ? "star_count DESC, f.created_at DESC" : "f.created_at DESC, f.id DESC"}`,
     )
     .all(...params) as AdminFeedback[];
 }
@@ -197,7 +256,8 @@ export function getStats() {
          (SELECT COUNT(*) FROM users WHERE active = 1)                 AS employees,
          (SELECT COUNT(*) FROM feedback)                               AS total,
          (SELECT COUNT(*) FROM feedback WHERE recipient_id IS NULL)    AS to_everyone,
-         (SELECT COUNT(*) FROM feedback WHERE created_at >= datetime('now', '-7 days')) AS this_week`,
+         (SELECT COUNT(*) FROM feedback WHERE created_at >= datetime('now', '-7 days')) AS this_week,
+         (SELECT COUNT(*) FROM stars)                                  AS stars`,
     )
-    .get() as { employees: number; total: number; to_everyone: number; this_week: number };
+    .get() as { employees: number; total: number; to_everyone: number; this_week: number; stars: number };
 }

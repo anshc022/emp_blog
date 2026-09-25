@@ -3,7 +3,16 @@
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { CATEGORIES, type Category, db, getUserById, getUserWithHash, createFeedback } from "./db";
+import {
+  CATEGORIES,
+  type Category,
+  canSeeFeedback,
+  createFeedback,
+  db,
+  getUserById,
+  getUserWithHash,
+  toggleStar as toggleStarRow,
+} from "./db";
 import { createSession, deleteSession, requireAdmin, requireUser } from "./session";
 
 export type FormState = { error?: string; success?: string } | undefined;
@@ -72,6 +81,13 @@ export async function sendFeedback(_: FormState, form: FormData): Promise<FormSt
   createFeedback({ authorId: user.id, recipientId, category, message });
   revalidatePath("/", "layout");
   return { success: "Feedback sent anonymously. Thank you!" };
+}
+
+export async function toggleStar(feedbackId: number) {
+  const user = await requireUser();
+  if (!Number.isInteger(feedbackId) || !canSeeFeedback(user, feedbackId)) return;
+  toggleStarRow(user.id, feedbackId);
+  revalidatePath("/", "layout");
 }
 
 /* --------------------------- Admin ---------------------------- */
