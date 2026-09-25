@@ -15,7 +15,7 @@ export default async function GivePage() {
 
   return (
     <>
-      <PageHeader tag="☕ spill" tagColor="var(--pink)" title="spill the tea ☕">
+      <PageHeader tag="☕ spill" tagColor="var(--pink)" title={<>spill the <span className="grad-text">tea</span> ☕</>}>
         to one person or the whole company. they&apos;ll never know it was you 🤫
       </PageHeader>
 
@@ -25,8 +25,8 @@ export default async function GivePage() {
         {TIPS.map(([emoji, title, body, color], i) => (
           <div
             key={title}
-            className="brut-sm p-4 text-on-bright"
-            style={{ background: color, rotate: `${[-1.5, 1, -1][i]}deg` }}
+            className="brut-sm pop-in p-4 text-on-bright"
+            style={{ background: color, animationDelay: `${i * 80}ms` }}
           >
             <div className="text-2xl">{emoji}</div>
             <div className="mt-1 font-extrabold">{title}</div>

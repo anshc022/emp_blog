@@ -1,4 +1,5 @@
 import { MobileNav, Sidebar, Ticker, type NavItem } from "@/components/app-nav";
+import { WelcomeSound } from "@/components/sound";
 import { countInbox, getStats } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 
@@ -33,14 +34,17 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
 
   return (
     <div className="flex min-h-dvh">
+      <WelcomeSound />
       <Sidebar items={items} adminItems={adminItems} user={who} />
       <div className="min-w-0 flex-1">
         <MobileNav
           items={adminItems.length ? [items[0], items[2], items[1], ...adminItems] : items}
           user={who}
         />
-        <Ticker items={ticker} />
-        <main className="mx-auto w-full max-w-3xl px-4 pt-8 pb-36 sm:px-8 lg:pt-12 lg:pb-16">{children}</main>
+        <div className="mx-auto w-full max-w-3xl px-4 pt-4 sm:px-8 lg:pt-6">
+          <Ticker items={ticker} />
+        </div>
+        <main className="mx-auto w-full max-w-3xl px-4 pt-8 pb-36 sm:px-8 lg:pt-10 lg:pb-16">{children}</main>
       </div>
     </div>
   );

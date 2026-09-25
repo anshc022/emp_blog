@@ -17,12 +17,12 @@ export default async function EmployeesPage() {
       </PageHeader>
 
       <details className="brut group mb-8" open={users.length < 3}>
-        <summary className="flex cursor-pointer list-none items-center gap-3 p-5 [&::-webkit-details-marker]:hidden">
-          <span className="grid size-10 place-items-center rounded-xl border-2 border-line bg-lime text-xl">➕</span>
+        <summary data-sound="open" className="flex cursor-pointer list-none items-center gap-3 p-5 [&::-webkit-details-marker]:hidden">
+          <span className="grid size-10 place-items-center rounded-2xl text-xl text-white" style={{ backgroundImage: "var(--grad)" }}>➕</span>
           <span className="flex-1 text-lg font-extrabold">add a human</span>
           <span className="text-xl transition group-open:rotate-180">👇</span>
         </summary>
-        <div className="border-t-[2.5px] border-line p-5 sm:p-6"><AddEmployeeForm /></div>
+        <div className="border-t border-line p-5 sm:p-6"><AddEmployeeForm /></div>
       </details>
 
       <ul className="space-y-4">
@@ -39,7 +39,7 @@ export default async function EmployeesPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-lg font-extrabold">{u.name}</span>
                   {self && <span className="tag text-faint">(you)</span>}
-                  {u.role === "admin" && <span className="sticker -rotate-3 bg-yellow !py-0 !text-xs">👑 admin</span>}
+                  {u.role === "admin" && <span className="sticker bg-yellow !py-0 !text-xs">👑 admin</span>}
                   {!u.active && <span className="sticker bg-sunken !py-0 !text-xs !text-text">💤 benched</span>}
                 </div>
                 <div className="truncate text-sm text-muted">
@@ -53,11 +53,11 @@ export default async function EmployeesPage() {
                   <>
                     <form action={toggleRole}>
                       <input type="hidden" name="id" value={u.id} />
-                      <button className="btn-sm">{u.role === "admin" ? "🫳 take crown" : "👑 make admin"}</button>
+                      <button data-sound={u.role === "admin" ? "unstar" : "star"} className="btn-sm">{u.role === "admin" ? "🫳 take crown" : "👑 make admin"}</button>
                     </form>
                     <form action={toggleActive}>
                       <input type="hidden" name="id" value={u.id} />
-                      <button className="btn-sm">{u.active ? "💤 bench" : "⚡ revive"}</button>
+                      <button data-sound={u.active ? "close" : "success"} className="btn-sm">{u.active ? "💤 bench" : "⚡ revive"}</button>
                     </form>
                   </>
                 )}

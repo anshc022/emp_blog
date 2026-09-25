@@ -5,7 +5,7 @@ export function Segmented({
   options,
   value,
   hrefFor,
-  color = "var(--lime)",
+  color = "var(--grad)",
 }: {
   options: { value: string; label: string; count?: number | null }[];
   value: string;
@@ -13,7 +13,7 @@ export function Segmented({
   color?: string;
 }) {
   return (
-    <div className="inline-flex gap-1 rounded-full border-2 border-line bg-surface p-1 shadow-[3px_3px_0_0_var(--line)]">
+    <div className="inline-flex gap-1 rounded-full border border-white/70 bg-surface p-1 shadow-[0_10px_30px_-16px_var(--glow)] backdrop-blur-xl dark:border-white/10">
       {options.map((o) => {
         const active = o.value === value;
         return (
@@ -21,16 +21,17 @@ export function Segmented({
             key={o.value}
             href={hrefFor(o.value)}
             scroll={false}
-            className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-bold whitespace-nowrap transition ${
-              active ? "border-2 border-line text-on-bright" : "border-2 border-transparent text-muted hover:text-text"
+            data-sound="tab"
+            className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-bold whitespace-nowrap transition-all duration-300 ${
+              active ? "text-white shadow-[0_6px_16px_-6px_rgb(255_79_154/0.6)]" : "text-muted hover:bg-sunken hover:text-text"
             }`}
-            style={active ? { background: color } : undefined}
+            style={active ? { backgroundImage: color } : undefined}
           >
             {o.label}
             {o.count != null && (
               <span
                 className={`grid min-w-5 place-items-center rounded-full px-1 font-mono text-[11px] ${
-                  active ? "bg-on-bright text-white" : "bg-sunken"
+                  active ? "bg-white/25 text-white" : "bg-sunken"
                 }`}
               >
                 {o.count}

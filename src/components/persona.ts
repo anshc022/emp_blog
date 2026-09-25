@@ -17,7 +17,16 @@ const CRITTERS: [string, string][] = [
   ["Pupper", "🐶"], ["Dino", "🦕"], ["Hamster", "🐹"], ["Seal", "🦭"],
 ];
 
-const BRIGHTS = ["var(--lime)", "var(--pink)", "var(--blue)", "var(--yellow)", "var(--lilac)", "var(--orange)", "var(--mint)"];
+// Candy gradients for avatars.
+const BRIGHTS = [
+  "linear-gradient(135deg, #ffd1ec, #ff8cc6)",
+  "linear-gradient(135deg, #e3d7ff, #a98bff)",
+  "linear-gradient(135deg, #ffe6c2, #ffab66)",
+  "linear-gradient(135deg, #c9f6dc, #62d6a0)",
+  "linear-gradient(135deg, #cfe3ff, #78a9ff)",
+  "linear-gradient(135deg, #fff0b8, #ffcc4d)",
+  "linear-gradient(135deg, #c6f5ee, #52cfc0)",
+];
 
 export function persona(id: number) {
   const adjective = ADJECTIVES[(id * 7 + 3) % ADJECTIVES.length];

@@ -39,7 +39,7 @@ export default async function AdminFeedbackPage(props: PageProps<"/admin">) {
 
   return (
     <>
-      <PageHeader tag="👁️ god mode" tagColor="var(--yellow)" title="all the tea, with names 👁️">
+      <PageHeader tag="👁️ god mode" tagColor="var(--yellow)" title={<>all the tea, <span className="grad-text">with names</span> 👁️</>}>
         you can see who wrote everything. with great power comes great responsibility 🕷️
       </PageHeader>
 
@@ -47,8 +47,8 @@ export default async function AdminFeedbackPage(props: PageProps<"/admin">) {
         {tiles.map(([emoji, value, label, color], i) => (
           <div
             key={label}
-            className="brut-sm p-4 text-on-bright"
-            style={{ background: color, rotate: `${[-1.5, 1, -1, 1.5][i]}deg` }}
+            className="brut-sm pop-in p-4 text-on-bright"
+            style={{ background: color, animationDelay: `${i * 70}ms` }}
           >
             <div className="text-2xl">{emoji}</div>
             <div className="text-4xl leading-none font-extrabold tabular-nums">{value}</div>
@@ -74,15 +74,15 @@ export default async function AdminFeedbackPage(props: PageProps<"/admin">) {
           </select>
         </div>
         {sort === "top" && <input type="hidden" name="sort" value="top" />}
-        <button className="btn bg-lime">filter 🔍</button>
-        {filtered && <Link href="/admin" className="btn bg-surface !text-text">clear</Link>}
+        <button data-sound="tap" className="btn-grad">filter 🔍</button>
+        {filtered && <Link href="/admin" data-sound="close" className="btn-sm !px-4 !py-2.5 !text-sm">clear</Link>}
       </form>
 
       <div className="mb-6 flex items-center justify-between gap-3">
         <span className="tag text-muted">{items.length} {items.length === 1 ? "note" : "notes"}</span>
         <Segmented
           value={sort}
-          color="var(--yellow)"
+          color="var(--grad-cool)"
           hrefFor={href}
           options={[{ value: "new", label: "fresh 🆕" }, { value: "top", label: "top ⭐" }]}
         />
@@ -103,7 +103,7 @@ export default async function AdminFeedbackPage(props: PageProps<"/admin">) {
               from={
                 <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                   {f.author_name}
-                  <span className="sticker -rotate-2 bg-coral !py-0 !text-[11px]">🎭 unmasked</span>
+                  <span className="sticker bg-coral !py-0 !text-[11px]">🎭 unmasked</span>
                 </span>
               }
               to={
@@ -116,7 +116,7 @@ export default async function AdminFeedbackPage(props: PageProps<"/admin">) {
                 <>
                   <form action={deleteFeedback}>
                     <input type="hidden" name="id" value={f.id} />
-                    <button className="btn-sm hover:bg-coral hover:text-on-bright">🗑️ yeet</button>
+                    <button data-sound="delete" className="btn-sm hover:!bg-coral hover:text-on-bright">🗑️ yeet</button>
                   </form>
                   <StarButton id={f.id} count={f.star_count} starred={!!f.starred} />
                 </>

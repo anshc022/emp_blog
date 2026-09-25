@@ -32,15 +32,14 @@ export function FeedbackNote({
   footer?: ReactNode;
   index?: number;
 }) {
-  const tilt = [2.5, -2, 3, -3][index % 4];
   return (
-    <article className="pop-in brut relative p-5 sm:p-6" style={{ animationDelay: `${Math.min(index, 8) * 60}ms` }}>
+    <article className="pop-in brut relative overflow-hidden p-5 transition-transform duration-300 hover:-translate-y-0.5 sm:p-6" style={{ animationDelay: `${Math.min(index, 8) * 60}ms` }}>
       <span
-        className="absolute inset-x-0 top-0 h-2.5 rounded-t-[13px] border-b-[2.5px] border-line"
+        className="pointer-events-none absolute -top-10 -right-10 size-40 rounded-full opacity-60 blur-3xl"
         style={{ background: meta(category).color }}
         aria-hidden
       />
-      <header className="mt-2 flex items-start gap-3">
+      <header className="relative flex items-start gap-3">
         {avatar}
         <div className="min-w-0 flex-1">
           <div className="text-[17px] leading-tight font-extrabold">{from}</div>
@@ -49,11 +48,11 @@ export function FeedbackNote({
             <span className="font-mono text-xs font-bold text-faint">· {timeAgo(createdAt)}</span>
           </div>
         </div>
-        <CategorySticker category={category} tilt={tilt} />
+        <CategorySticker category={category} />
       </header>
-      <p className="mt-4 text-[19px] leading-[1.5] font-medium whitespace-pre-wrap sm:text-xl">{message}</p>
+      <p className="relative mt-4 text-[19px] leading-[1.5] font-medium whitespace-pre-wrap sm:text-xl">{message}</p>
       {footer && (
-        <footer className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t-2 border-dashed border-line/25 pt-4">
+        <footer className="relative mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
           {footer}
         </footer>
       )}
@@ -92,11 +91,11 @@ export function PageHeader({
   return (
     <div className="mb-8">
       {tag && (
-        <span className="sticker tag mb-4 -rotate-2 !text-[11px]" style={{ background: tagColor }}>
+        <span className="sticker tag mb-4 !px-3 !py-1 !text-[11px]" style={{ background: tagColor }}>
           {tag}
         </span>
       )}
-      <h1 className="text-[40px] leading-[0.95] font-extrabold tracking-[-0.035em] sm:text-[56px]">{title}</h1>
+      <h1 className="text-[40px] leading-[0.98] font-extrabold tracking-[-0.035em] sm:text-[54px]">{title}</h1>
       {children && <p className="mt-3 max-w-xl text-[17px] text-muted">{children}</p>}
     </div>
   );
@@ -112,7 +111,10 @@ export function starLine(count: number) {
 /** Read-only star count. */
 export function StarCount({ count }: { count: number }) {
   return (
-    <span className={`sticker !gap-1.5 !px-3 !py-1 ${count ? "bg-yellow" : "bg-surface !text-text"}`}>
+    <span
+      className={`sticker !gap-1.5 !px-3.5 !py-1.5 ${count ? "!text-white" : "border border-line bg-surface-strong !text-text"}`}
+      style={count ? { backgroundImage: "var(--grad)" } : undefined}
+    >
       <StarIcon filled={count > 0} size={16} /> {count}
     </span>
   );

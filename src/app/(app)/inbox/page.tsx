@@ -25,7 +25,7 @@ export default async function InboxPage(props: PageProps<"/inbox">) {
 
   return (
     <>
-      <PageHeader tag="📥 inbox" title={<>what&apos;s the tea, {user.name.split(" ")[0].toLowerCase()}? ☕</>}>
+      <PageHeader tag="📥 inbox" title={<>what&apos;s the tea, <span className="grad-text">{user.name.split(" ")[0].toLowerCase()}</span>? ☕</>}>
         everything here is anonymous. star the ones that hit ⭐ and the best takes float to the top.
       </PageHeader>
 
@@ -41,7 +41,7 @@ export default async function InboxPage(props: PageProps<"/inbox">) {
         />
         <Segmented
           value={sort}
-          color="var(--yellow)"
+          color="var(--grad-cool)"
           hrefFor={(v) => href({ sort: v })}
           options={[
             { value: "new", label: "fresh 🆕" },
@@ -53,7 +53,7 @@ export default async function InboxPage(props: PageProps<"/inbox">) {
       {items.length === 0 ? (
         <EmptyState emoji="🦗" title="it's giving… empty">
           no tea here yet. suspicious. be the main character and{" "}
-          <Link href="/give" className="font-extrabold text-text underline decoration-pink decoration-4 underline-offset-2">
+          <Link href="/give" data-sound="open" className="grad-text font-extrabold">
             spill first →
           </Link>
         </EmptyState>

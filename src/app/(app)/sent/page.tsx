@@ -11,17 +11,17 @@ export default async function SentPage() {
 
   return (
     <>
-      <PageHeader tag="🧾 receipts" tagColor="var(--blue)" title="your receipts 🧾">
+      <PageHeader tag="🧾 receipts" tagColor="var(--blue)" title={<>your <span className="grad-text">receipts</span> 🧾</>}>
         only you can see this. recipients saw these as anonymous.
       </PageHeader>
 
       {items.length > 0 && (
         <div className="mb-8 grid grid-cols-2 gap-4">
-          <div className="brut-sm -rotate-1 bg-pink p-4 text-on-bright">
+          <div className="brut-sm pop-in bg-pink p-5 text-on-bright">
             <div className="text-4xl font-extrabold">{items.length}</div>
             <div className="font-bold">notes spilled ☕</div>
           </div>
-          <div className="brut-sm rotate-1 bg-yellow p-4 text-on-bright">
+          <div className="brut-sm pop-in bg-yellow p-5 text-on-bright" style={{ animationDelay: "80ms" }}>
             <div className="text-4xl font-extrabold">{stars}</div>
             <div className="font-bold">stars farmed ⭐</div>
           </div>
@@ -30,7 +30,7 @@ export default async function SentPage() {
 
       {items.length === 0 ? (
         <EmptyState emoji="🤐" title="you haven't spilled anything yet">
-          <Link href="/give" className="font-extrabold text-text underline decoration-pink decoration-4 underline-offset-2">
+          <Link href="/give" data-sound="open" className="grad-text font-extrabold">
             write your first note →
           </Link>
         </EmptyState>
@@ -47,7 +47,7 @@ export default async function SentPage() {
                 f.recipient_name ? (
                   <PersonAvatar name={f.recipient_name} size={44} />
                 ) : (
-                  <span className="grid size-11 place-items-center rounded-full border-[2.5px] border-line bg-blue text-xl">📣</span>
+                  <span className="grid size-11 place-items-center rounded-full border-2 border-white/80 dark:border-white/15 bg-blue text-xl">📣</span>
                 )
               }
               from="you (incognito 🕶️)"

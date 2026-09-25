@@ -1,6 +1,6 @@
 # spill. ☕
 
-*spill the tea. anonymously.* An internal, **anonymous** feedback app for the whole company, with a loud, playful, Gen Z look.
+*spill the tea. anonymously.* An internal, **anonymous** feedback app for the whole company, with a dreamy, playful Gen Z "aura" look: animated gradient glow, frosted glass, candy pastels.
 
 - Any employee can send feedback to **one colleague** or to **everyone**.
 - Recipients **never** see who wrote it. Their inbox only shows "Anonymous".
@@ -17,6 +17,8 @@
 Feedback vibes: props 🙌, big idea 💡, red flag 🚩, random 🫠 (stored as Appreciation / Suggestion / Concern / Other).
 
 UX details: confetti when you send, a live "vibe meter" while you type (it even notices ALL CAPS), ⌘/Ctrl+Enter to send, a star button with an emoji burst, a stats ticker, dark mode, and a phone-friendly bottom dock.
+
+Sound effects: every interaction has a tiny synthesized sound (no audio files, Web Audio API): taps, tabs, opening menus, picking a person or vibe, soft typing ticks, starring (sparkle) and un-starring, send (whoosh + chime), confetti party, errors, successes, a login chime, a goodbye jingle and a delete swoosh. There's a 🔊/🔇 toggle in the sidebar and mobile header, saved per browser. Sounds live in `src/lib/sound.ts`; any element can opt in with `data-sound="tap"`.
 
 ## Tech
 

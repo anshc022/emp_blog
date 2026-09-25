@@ -11,10 +11,10 @@ export function meta(category: string) {
   return CATEGORY_META[category] ?? CATEGORY_META.Other;
 }
 
-export function CategorySticker({ category, tilt = 3 }: { category: string; tilt?: number }) {
+export function CategorySticker({ category, tilt = 0 }: { category: string; tilt?: number }) {
   const m = meta(category);
   return (
-    <span className="sticker shadow-[2px_2px_0_0_var(--line)]" style={{ background: m.color, rotate: `${tilt}deg` }}>
+    <span className="sticker" style={{ background: m.color, rotate: `${tilt}deg` }}>
       <span aria-hidden>{m.emoji}</span> {m.label}
     </span>
   );
