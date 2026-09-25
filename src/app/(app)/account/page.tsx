@@ -1,14 +1,16 @@
+import { LogOut } from "lucide-react";
 import { PersonAvatar } from "@/components/avatar";
 import { PageHeader } from "@/components/feedback-note";
 import { ChangePasswordForm } from "@/components/forms";
 import { logout } from "@/lib/actions";
 import { requireUser } from "@/lib/session";
+import { Shades3D, Tilt } from "@/components/three-d";
 
 export default async function AccountPage() {
   const user = await requireUser();
   return (
     <>
-      <PageHeader title="you" />
+      <PageHeader title="you" art={<Tilt><Shades3D size={110} /></Tilt>} />
       <div className="mb-10 flex items-center gap-4 border-b border-line pb-8">
         <PersonAvatar name={user.name} size={52} />
         <div className="min-w-0 flex-1">
@@ -25,7 +27,7 @@ export default async function AccountPage() {
         <ChangePasswordForm />
       </div>
       <form action={logout} className="mt-12 border-t border-line pt-6">
-        <button data-sound="bye" className="btn-ghost !px-4 !py-2 !text-sm">log out 👋</button>
+        <button data-sound="bye" className="btn-ghost !px-4 !py-2 !text-sm"><LogOut size={14} /> log out</button>
       </form>
     </>
   );

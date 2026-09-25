@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { Megaphone } from "lucide-react";
 import { PersonAvatar } from "@/components/avatar";
 import { EmptyState, FeedbackNote, PageHeader, StarCount, starLine } from "@/components/feedback-note";
+import { Envelope3D, Star3D, Tilt } from "@/components/three-d";
 import { listSent } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 
@@ -13,6 +15,7 @@ export default async function SentPage() {
     <>
       <PageHeader
         title="sent"
+        art={<Tilt><Star3D size={110} /></Tilt>}
         right={
           items.length > 0 && (
             <div className="flex gap-6 text-right">
@@ -32,7 +35,7 @@ export default async function SentPage() {
       </PageHeader>
 
       {items.length === 0 ? (
-        <EmptyState emoji="🤐" title="nothing sent yet">
+        <EmptyState art={<Tilt><Envelope3D size={150} /></Tilt>} title="nothing sent yet">
           <Link href="/give" data-sound="open" className="text-text underline underline-offset-4">
             write your first note
           </Link>
@@ -50,10 +53,10 @@ export default async function SentPage() {
                 f.recipient_name ? (
                   <PersonAvatar name={f.recipient_name} />
                 ) : (
-                  <span className="grid size-9 shrink-0 place-items-center rounded-full border border-line bg-subtle text-sm">📣</span>
+                  <span className="grid size-9 shrink-0 place-items-center rounded-full border border-line bg-subtle"><Megaphone size={15} /></span>
                 )
               }
-              from="you, incognito 🕶️"
+              from="you, incognito"
               to={f.recipient_name ?? "everyone"}
               footer={
                 <>

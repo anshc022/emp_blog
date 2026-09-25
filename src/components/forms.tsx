@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Check, ChevronDown, EyeOff, Eye, KeyRound, Lock, Megaphone, Search, Send } from "lucide-react";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import {
   changePassword,
@@ -13,6 +14,7 @@ import {
 import { play } from "@/lib/sound";
 import { PersonAvatar } from "./avatar";
 import { CATEGORY_META, Dot } from "./category";
+import { TeaCup3D, Tilt } from "./three-d";
 
 function Status({ state }: { state: FormState }) {
   useEffect(() => {
@@ -77,7 +79,7 @@ export function LoginForm() {
             aria-label={peek ? "Hide password" : "Show password"}
             title={peek ? "hide" : "peek"}
           >
-            {peek ? "🙉" : "🙈"}
+            {peek ? <EyeOff size={17} className="text-muted" /> : <Eye size={17} className="text-muted" />}
           </button>
         </div>
       </div>
@@ -133,7 +135,7 @@ function RecipientPicker({ colleagues }: { colleagues: Colleague[] }) {
         {selected ? (
           <PersonAvatar name={selected.name} size={32} />
         ) : (
-          <span className="grid size-8 place-items-center rounded-full border border-line bg-subtle text-sm">📣</span>
+          <span className="grid size-8 place-items-center rounded-full border border-line bg-subtle"><Megaphone size={15} /></span>
         )}
         <span className="flex-1">
           <span className="block text-[15px] font-medium">{selected ? selected.name : "everyone"}</span>
@@ -141,11 +143,13 @@ function RecipientPicker({ colleagues }: { colleagues: Colleague[] }) {
             {selected ? (selected.department ?? "coworker") : "the whole company sees this"}
           </span>
         </span>
-        <span className={`text-faint transition ${open ? "rotate-180" : ""}`}>↓</span>
+        <ChevronDown size={17} className={`text-faint transition ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
         <div className="fade-up absolute inset-x-0 top-full z-40 mt-2 overflow-hidden rounded-xl border border-line bg-bg shadow-xl shadow-black/5">
+          <div className="flex items-center gap-2 border-b border-line px-3.5">
+          <Search size={16} className="text-faint" />
           <input
             autoFocus
             value={query}
@@ -154,12 +158,13 @@ function RecipientPicker({ colleagues }: { colleagues: Colleague[] }) {
               setQuery(e.target.value);
             }}
             placeholder="search people…"
-            className="w-full border-b border-line bg-transparent px-4 py-3 text-[15px] outline-none placeholder:text-faint"
+            className="w-full bg-transparent py-3 text-[15px] outline-none placeholder:text-faint"
           />
+          </div>
           <ul className="max-h-72 overflow-y-auto p-1.5" role="listbox">
             {!query && (
               <Option active={value === "everyone"} onClick={() => pick("everyone")}>
-                <span className="grid size-7 place-items-center rounded-full border border-line bg-subtle text-xs">📣</span>
+                <span className="grid size-7 place-items-center rounded-full border border-line bg-subtle"><Megaphone size={13} /></span>
                 <span className="flex-1 text-[15px]">everyone</span>
               </Option>
             )}
@@ -191,7 +196,7 @@ function Option({ active, onClick, children }: { active: boolean; onClick: () =>
         className={`flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left transition hover:bg-subtle ${active ? "bg-subtle" : ""}`}
       >
         {children}
-        {active && <span className="text-sm">✓</span>}
+        {active && <Check size={16} />}
       </button>
     </li>
   );
@@ -261,7 +266,9 @@ function SentScreen({ onAgain }: { onAgain: () => void }) {
   return (
     <div className="fade-up py-16 text-center">
       <Confetti />
-      <div className="mb-6 text-5xl">🫖</div>
+      <Tilt className="mx-auto mb-2 w-fit">
+        <TeaCup3D size={170} />
+      </Tilt>
       <h2 className="text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">{line}</h2>
       <p className="mx-auto mt-2 max-w-sm text-[15px] text-muted">
         they&apos;ll never know it was you. only super admins can see names.
@@ -363,10 +370,10 @@ export function Composer({ colleagues, categories }: { colleagues: Colleague[]; 
       <Status state={state?.error ? state : undefined} />
 
       <div className="flex items-center gap-3 border-t border-line pt-5">
-        <span className="text-[13px] text-muted">🕶️ your name stays hidden</span>
+        <span className="inline-flex items-center gap-1.5 text-[13px] text-muted"><Lock size={13} /> your name stays hidden</span>
         <span className="meta hidden sm:inline">⌘↵ to send</span>
         <button className="btn ml-auto" disabled={pending || text.trim().length < 5}>
-          {pending ? "sending…" : "send anonymously"}
+          {pending ? "sending…" : <>send anonymously <Send size={14} /></>}
         </button>
       </div>
     </form>
@@ -435,7 +442,7 @@ export function ResetPasswordForm({ id }: { id: number }) {
   return (
     <details className="relative">
       <summary data-sound="open" className="btn-ghost cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-        {state?.success ? "reset ✓" : "password"}
+        <KeyRound size={13} /> {state?.success ? "reset" : "password"}
       </summary>
       <form ref={ref} action={action} className="fade-up absolute right-0 z-20 mt-2 w-60 space-y-2 rounded-xl border border-line bg-bg p-3 shadow-xl shadow-black/5">
         <input type="hidden" name="id" value={id} />

@@ -1,6 +1,6 @@
 # spill. ☕
 
-*spill the tea. anonymously.* An internal, **anonymous** feedback app for the whole company, Minimal black & white design with small pops of colour, and a funny voice.
+*spill the tea. anonymously.* An internal, **anonymous** feedback app for the whole company, Minimal black & white design with small pops of colour, hand-built 3D SVG objects (teacup, envelope, star, shades) that float and tilt toward the cursor, lucide line icons, and a funny voice.
 
 - Any employee can send feedback to **one colleague** or to **everyone**.
 - Recipients **never** see who wrote it. Their inbox only shows "Anonymous".

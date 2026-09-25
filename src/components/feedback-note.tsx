@@ -55,24 +55,35 @@ export function FeedbackNote({
   );
 }
 
-export function EmptyState({ emoji, title, children }: { emoji: string; title: string; children?: ReactNode }) {
+export function EmptyState({ art, title, children }: { art: ReactNode; title: string; children?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center py-20 text-center">
-      <div className="mb-4 text-4xl grayscale">{emoji}</div>
+    <div className="flex flex-col items-center py-14 text-center">
+      <div className="mb-2">{art}</div>
       <h3 className="text-lg font-semibold">{title}</h3>
       {children && <div className="mt-1 max-w-sm text-[15px] text-muted">{children}</div>}
     </div>
   );
 }
 
-export function PageHeader({ title, children, right }: { title: ReactNode; children?: ReactNode; right?: ReactNode }) {
+export function PageHeader({
+  title,
+  children,
+  right,
+  art,
+}: {
+  title: ReactNode;
+  children?: ReactNode;
+  right?: ReactNode;
+  art?: ReactNode;
+}) {
   return (
-    <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-      <div>
+    <div className="mb-8 flex items-center justify-between gap-4">
+      <div className="min-w-0">
         <h1 className="text-[28px] leading-tight font-semibold tracking-[-0.03em] sm:text-[32px]">{title}</h1>
         {children && <p className="mt-1.5 max-w-lg text-[15px] text-muted">{children}</p>}
       </div>
       {right}
+      {art && <div className="-my-6 hidden shrink-0 sm:block">{art}</div>}
     </div>
   );
 }

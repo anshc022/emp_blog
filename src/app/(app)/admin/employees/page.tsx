@@ -1,7 +1,9 @@
+import { Crown, Moon, Plus, Zap } from "lucide-react";
 import { PersonAvatar } from "@/components/avatar";
 import { PageHeader } from "@/components/feedback-note";
 import { AddEmployeeForm, ResetPasswordForm } from "@/components/forms";
 import { toggleActive, toggleRole } from "@/lib/actions";
+import { Star3D, Tilt } from "@/components/three-d";
 import { listUsers } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
 
@@ -12,14 +14,14 @@ export default async function EmployeesPage() {
 
   return (
     <>
-      <PageHeader title="people">
+      <PageHeader title="people" art={<Tilt><Star3D size={110} /></Tilt>}>
         {active} {active === 1 ? "human" : "humans"} in the chat. add people, reset passwords, hand out crowns.
       </PageHeader>
 
       <details className="group mb-10 border-y border-line" open={users.length < 3}>
         <summary data-sound="open" className="flex cursor-pointer list-none items-center py-4 [&::-webkit-details-marker]:hidden">
-          <span className="flex-1 font-medium">+ add a person</span>
-          <span className="text-faint transition group-open:rotate-45">+</span>
+          <span className="flex-1 font-medium">add a person</span>
+          <Plus size={18} className="text-faint transition group-open:rotate-45" />
         </summary>
         <div className="pb-6"><AddEmployeeForm /></div>
       </details>
@@ -38,7 +40,7 @@ export default async function EmployeesPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-medium">{u.name}</span>
                   {self && <span className="meta">you</span>}
-                  {u.role === "admin" && <span className="meta">👑 admin</span>}
+                  {u.role === "admin" && <span className="meta inline-flex items-center gap-1"><Crown size={12} className="text-[var(--star)]" /> admin</span>}
                   {!u.active && <span className="meta">benched</span>}
                 </div>
                 <div className="truncate text-[13px] text-muted">
@@ -53,13 +55,13 @@ export default async function EmployeesPage() {
                     <form action={toggleRole}>
                       <input type="hidden" name="id" value={u.id} />
                       <button data-sound={u.role === "admin" ? "unstar" : "star"} className="btn-ghost">
-                        {u.role === "admin" ? "take crown" : "make admin"}
+                        <Crown size={13} /> {u.role === "admin" ? "take crown" : "make admin"}
                       </button>
                     </form>
                     <form action={toggleActive}>
                       <input type="hidden" name="id" value={u.id} />
                       <button data-sound={u.active ? "close" : "success"} className="btn-ghost">
-                        {u.active ? "bench" : "revive"}
+                        {u.active ? <><Moon size={13} /> bench</> : <><Zap size={13} /> revive</>}
                       </button>
                     </form>
                   </>

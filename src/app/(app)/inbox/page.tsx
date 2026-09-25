@@ -4,6 +4,7 @@ import { EmptyState, FeedbackNote, PageHeader, starLine } from "@/components/fee
 import { persona } from "@/components/persona";
 import { Segmented } from "@/components/segmented";
 import { StarButton } from "@/components/star-button";
+import { TeaCup3D, Tilt } from "@/components/three-d";
 import { countInbox, listInbox, type InboxSort, type InboxView } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 
@@ -25,7 +26,10 @@ export default async function InboxPage(props: PageProps<"/inbox">) {
 
   return (
     <>
-      <PageHeader title={<>what&apos;s the tea, {user.name.split(" ")[0].toLowerCase()}?</>}>
+      <PageHeader
+        title={<>what&apos;s the tea, {user.name.split(" ")[0].toLowerCase()}?</>}
+        art={<Tilt><TeaCup3D size={120} /></Tilt>}
+      >
         everything here is anonymous. star what hits and it floats to the top.
       </PageHeader>
 
@@ -50,7 +54,7 @@ export default async function InboxPage(props: PageProps<"/inbox">) {
       </div>
 
       {items.length === 0 ? (
-        <EmptyState emoji="🦗" title="it's giving… empty">
+        <EmptyState art={<Tilt><TeaCup3D size={150} steam={false} /></Tilt>} title="it's giving… empty">
           no tea yet. suspicious.{" "}
           <Link href="/give" data-sound="open" className="text-text underline underline-offset-4">
             be the first

@@ -5,6 +5,7 @@ import { CategoryTag } from "@/components/category";
 import { LoginForm } from "@/components/forms";
 import { persona } from "@/components/persona";
 import { getCurrentUser } from "@/lib/session";
+import { TeaCup3D, Tilt } from "@/components/three-d";
 
 const SAMPLES = [
   { seed: 3, cat: "Appreciation", text: "the way you ran the launch retro? everyone felt heard. W." },
@@ -45,7 +46,10 @@ export default async function LoginPage() {
       </section>
 
       <section className="w-full max-w-sm lg:justify-self-end">
-        <h2 className="text-2xl font-semibold tracking-tight">who&apos;s there? 👀</h2>
+        <Tilt className="-mb-2 -ml-4 w-fit">
+          <TeaCup3D size={170} />
+        </Tilt>
+        <h2 className="text-2xl font-semibold tracking-tight">who&apos;s there?</h2>
         <p className="mt-1 mb-7 text-[15px] text-muted">log in with the account your admin made for you.</p>
         <LoginForm />
         <p className="mt-8 text-[13px] text-faint">

@@ -1,5 +1,6 @@
 "use client";
 
+import { Volume2, VolumeX } from "lucide-react";
 import { useEffect, useSyncExternalStore } from "react";
 import { isMuted, play, setMuted, type SoundName } from "@/lib/sound";
 
@@ -56,7 +57,7 @@ export function MuteToggle({ className = "" }: { className?: string }) {
       title={muted ? "sounds off" : "sounds on"}
       className={`btn-ghost !px-2.5 ${className}`}
     >
-      {muted ? "sound off" : "sound on"}
+      {muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
     </button>
   );
 }

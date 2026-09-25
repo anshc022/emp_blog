@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { Trash2 } from "lucide-react";
 import { PersonAvatar } from "@/components/avatar";
-import { Dot } from "@/components/category";
 import { EmptyState, FeedbackNote, PageHeader } from "@/components/feedback-note";
 import { persona } from "@/components/persona";
 import { Segmented } from "@/components/segmented";
 import { StarButton } from "@/components/star-button";
+import { Shades3D, Tilt } from "@/components/three-d";
 import { deleteFeedback } from "@/lib/actions";
 import { getStats, listAllFeedback, listUsers } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
@@ -40,7 +41,7 @@ export default async function AdminFeedbackPage(props: PageProps<"/admin">) {
 
   return (
     <>
-      <PageHeader title="all the tea, with names">
+      <PageHeader title="all the tea, with names" art={<Tilt><Shades3D size={130} /></Tilt>}>
         you can see who wrote everything. with great power comes great responsibility.
       </PageHeader>
 
@@ -80,7 +81,7 @@ export default async function AdminFeedbackPage(props: PageProps<"/admin">) {
       </div>
 
       {items.length === 0 ? (
-        <EmptyState emoji="🕵️" title="nothing matches">try a different filter.</EmptyState>
+        <EmptyState art={<Tilt><Shades3D size={150} /></Tilt>} title="nothing matches">try a different filter.</EmptyState>
       ) : (
         items.map((f, i) => (
           <FeedbackNote
@@ -103,7 +104,7 @@ export default async function AdminFeedbackPage(props: PageProps<"/admin">) {
                 <form action={deleteFeedback} className="ml-auto">
                   <input type="hidden" name="id" value={f.id} />
                   <button data-sound="delete" className="inline-flex items-center gap-1.5 text-[13px] text-faint transition hover:text-text">
-                    <Dot color="var(--c-flag)" size={6} /> yeet
+                    <Trash2 size={14} /> yeet
                   </button>
                 </form>
               </>
