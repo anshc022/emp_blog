@@ -6,6 +6,7 @@ import { connectDB } from "@/lib/db";
 import { AUTHOR_POPULATE, DOUBT_SELECT } from "@/lib/doubts";
 import { rateLimit } from "@/lib/rate-limit";
 import { serializeDoubt, type DoubtLike } from "@/lib/serialize";
+import { emitDoubtToSession } from "@/lib/socket";
 import { loadSessionFor } from "@/lib/sessions";
 import { createDoubtSchema, doubtStatusSchema } from "@/lib/validators";
 import { Doubt } from "@/models/Doubt";
@@ -44,6 +45,7 @@ export const POST = handler(async (req: NextRequest, { params }: Ctx) => {
   const created = await Doubt.create({ ...input, sessionId: id, authorId: user.id });
   await created.populate(AUTHOR_POPULATE);
   const doubt = serializeDoubt(created, user.id);
+  await emitDoubtToSession(id, "doubt:created", created);
 
   return NextResponse.json({ doubt }, { status: 201 });
 });

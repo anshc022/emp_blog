@@ -4,6 +4,7 @@ import { handler, HttpError } from "@/lib/api";
 import { requireRole } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { loadDoubt } from "@/lib/doubts";
+import { emitToSession } from "@/lib/socket";
 import { Doubt } from "@/models/Doubt";
 
 // The author can delete their own doubt; the session's teacher can delete any.
@@ -18,5 +19,6 @@ export const DELETE = handler(async (req: NextRequest, { params }: { params: Pro
   if (!isAuthor && !isOwner) throw new HttpError(403, "You can only delete your own doubts");
 
   await Doubt.deleteOne({ _id: id });
+  emitToSession(session._id.toString(), "doubt:deleted", { doubtId: id });
   return NextResponse.json({ ok: true, doubtId: id });
 });

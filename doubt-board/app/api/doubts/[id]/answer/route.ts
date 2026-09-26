@@ -5,6 +5,7 @@ import { requireRole } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { assertSessionOwner, loadDoubt } from "@/lib/doubts";
 import { serializeDoubt } from "@/lib/serialize";
+import { emitDoubtToSession } from "@/lib/socket";
 import { answerDoubtSchema } from "@/lib/validators";
 
 export const PATCH = handler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
@@ -20,6 +21,7 @@ export const PATCH = handler(async (req: NextRequest, { params }: { params: Prom
   doubt.answer = answer || undefined;
   doubt.answeredAt = new Date();
   await doubt.save();
+  await emitDoubtToSession(session._id.toString(), "doubt:answered", doubt);
 
   return NextResponse.json({ doubt: serializeDoubt(doubt, user.id) });
 });

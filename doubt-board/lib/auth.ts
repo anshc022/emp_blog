@@ -1,44 +1,12 @@
-import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 import type { NextRequest, NextResponse } from "next/server";
 
 import { HttpError } from "@/lib/api";
-import type { Role } from "@/models/User";
+import { AUTH_COOKIE, AUTH_TTL_SECONDS, signAuthToken, verifyToken, type AuthUser, type Role } from "@/lib/jwt";
 
-export const AUTH_COOKIE = "ldb_token";
-const AUTH_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
-const SOCKET_TTL_SECONDS = 60 * 5; // only needs to survive the handshake
+export { AUTH_COOKIE, signAuthToken, signSocketToken, verifyToken, type AuthUser } from "@/lib/jwt";
 
-export type AuthUser = { id: string; name: string; role: Role };
-type TokenPayload = { sub: string; name: string; role: Role; typ: "auth" | "socket" };
-
-function secret(): string {
-  const s = process.env.JWT_SECRET;
-  if (!s) throw new Error("JWT_SECRET is not set. Copy .env.example to .env.local and fill it in.");
-  return s;
-}
-
-function sign(user: AuthUser, typ: TokenPayload["typ"], expiresIn: number) {
-  const payload: TokenPayload = { sub: user.id, name: user.name, role: user.role, typ };
-  return jwt.sign(payload, secret(), { expiresIn, algorithm: "HS256" });
-}
-
-export const signAuthToken = (user: AuthUser) => sign(user, "auth", AUTH_TTL_SECONDS);
-export const signSocketToken = (user: AuthUser) => sign(user, "socket", SOCKET_TTL_SECONDS);
-
-/** Verify a token of the given type. Returns null for anything invalid or expired. */
-export function verifyToken(token: string | undefined | null, typ: TokenPayload["typ"] = "auth"): AuthUser | null {
-  if (!token) return null;
-  try {
-    const p = jwt.verify(token, secret(), { algorithms: ["HS256"] }) as TokenPayload;
-    if (p.typ !== typ || !p.sub || (p.role !== "student" && p.role !== "teacher")) return null;
-    return { id: p.sub, name: p.name, role: p.role };
-  } catch {
-    return null;
-  }
-}
-
-/** Read the signed-in user from the request cookie (or the current request in a route handler). */
+/** Read the signed-in user from the request cookie (or the current request in a server component). */
 export async function getUser(req?: NextRequest): Promise<AuthUser | null> {
   const token = req ? req.cookies.get(AUTH_COOKIE)?.value : (await cookies()).get(AUTH_COOKIE)?.value;
   return verifyToken(token);

@@ -4,6 +4,7 @@ import { handler, HttpError } from "@/lib/api";
 import { requireRole } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { loadSessionFor, serializeSession } from "@/lib/sessions";
+import { emitToSession } from "@/lib/socket";
 import { Session } from "@/models/Session";
 
 export const PATCH = handler(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
@@ -19,5 +20,6 @@ export const PATCH = handler(async (req: NextRequest, { params }: { params: Prom
   ).lean();
   if (!session) throw new HttpError(409, "This session has already ended");
 
+  emitToSession(id, "session:ended", { sessionId: id, endedAt: (session.endedAt ?? new Date()).toISOString() });
   return NextResponse.json({ session: serializeSession(session, user) });
 });

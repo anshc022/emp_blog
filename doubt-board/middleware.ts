@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { AUTH_COOKIE, verifyToken } from "@/lib/auth";
+import { AUTH_COOKIE, verifyToken } from "@/lib/jwt";
 
 const homeFor = (role: "student" | "teacher") => (role === "teacher" ? "/teacher" : "/join");
 

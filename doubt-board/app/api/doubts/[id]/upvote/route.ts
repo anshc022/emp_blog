@@ -4,6 +4,7 @@ import { handler, HttpError } from "@/lib/api";
 import { requireRole } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { loadDoubt } from "@/lib/doubts";
+import { emitToSession } from "@/lib/socket";
 import { Doubt } from "@/models/Doubt";
 
 // Toggle the current student's upvote. Each branch is a single atomic update
@@ -34,5 +35,6 @@ export const POST = handler(async (req: NextRequest, { params }: { params: Promi
   }
   if (!updated) throw new HttpError(409, "Couldn't update the vote, please try again");
 
+  emitToSession(session._id.toString(), "doubt:upvoted", { doubtId: id, upvoteCount: updated.upvoteCount });
   return NextResponse.json({ doubtId: id, upvoteCount: updated.upvoteCount, hasUpvoted });
 });
