@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Separate project with its own config.
+    "doubt-board/**",
   ]),
 ]);
 
