@@ -1,5 +1,7 @@
 # spill. ☕
 
+> This repo also contains **[Live Doubt Board](doubt-board/README.md)** in `doubt-board/`: a separate real-time classroom doubt app (Next.js 15 + MongoDB + Socket.io).
+
 *spill the tea. anonymously.* An internal, **anonymous** feedback app for the whole company, Minimal black & white design with small pops of colour, hand-built 3D SVG objects (teacup, envelope, star, shades) that float and tilt toward the cursor, lucide line icons, and a funny voice.
 
 - Any employee can send feedback to **one colleague** or to **everyone**.
