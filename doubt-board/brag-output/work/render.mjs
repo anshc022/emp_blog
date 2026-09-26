@@ -9,7 +9,7 @@ const mode = process.argv[2] ?? "stills";
 const wanted = (process.argv[3] ?? "").split(",").filter(Boolean).map(Number);
 const FPS = T.fps;
 const N = Math.round(T.duration * FPS);
-const outDir = mode === "full" || mode === "fix" ? "frames" : "stills";
+const outDir = mode === "full" || mode === "fix" ? (process.env.FRAMES_DIR ?? "frames") : (process.env.STILLS_DIR ?? "stills");
 fs.mkdirSync(outDir, { recursive: true });
 // "fix" takes frame numbers, "stills" takes seconds.
 const wantFrames = new Set(mode === "fix" ? wanted : wanted.map((s) => Math.round(s * FPS)));

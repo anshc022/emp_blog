@@ -1,9 +1,10 @@
 # Intermediate render output (regenerate with work/render.mjs + work/music.py)
-work/frames/
-work/stills/
-work/sheet/
+work/frames*/
+work/stills*/
+work/sheet*/
 work/*.wav
 work/*.log
 work/*.png
 work/*.jpg
+work/*.txt
 work/ff.env

@@ -99,12 +99,12 @@ Fadd9 = [41, 53, 60, 64, 67, 69]
 bars = [(0.0, 1.0, Bb, 46), (1.0, 3.0, C, 48)]
 prog = [(F, 41), (Dm, 38), (Bb, 46), (C, 48)]
 t0, k = 3.0, 0
-while t0 < 19.0:
+while t0 < 29.0:
     ch, root = prog[k % 4]
     bars.append((t0, t0 + 2.0, ch, root))
     t0 += 2.0
     k += 1
-bars.append((19.0, DUR, Fadd9, 41))
+bars.append((29.0, DUR, Fadd9, 41))
 
 music = buf()
 sfx = buf()
@@ -116,11 +116,11 @@ for s, e, ch, _ in bars:
     intro = s < 3.0
     for j, m in enumerate(ch[:4] if len(ch) > 4 and not e >= DUR else ch):
         v = saw(midi(m), n, 18, -7) + saw(midi(m), n, 18, +7, 0.7)
-        v = lowpass_fft(v, 900 if intro else (2600 if s < 19 else 3200), 1.5)
+        v = lowpass_fft(v, 900 if intro else (2600 if s < 29 else 3200), 1.5)
         v *= env_adsr(n, a=0.25 if intro else 0.04, d=0.3, s=0.8, r=0.35)
         place(music, v, s, 0.085 if intro else 0.06, pan=(-0.5 + j / max(1, len(ch) - 1)) * 0.8)
 
-# ── drums (from the drop at 3.0 until the outro chord at 19.0) ──────────────
+# ── drums (from the drop at 3.0 until the outro chord at 29.0) ──────────────
 def kick():
     n = int(0.45 * SR)
     t = np.arange(n) / SR
@@ -147,7 +147,7 @@ def hat(open_=False):
 K, CL = kick(), clap()
 kick_times = []
 beat = 3.0
-while beat < 19.0 - 1e-6:
+while beat < 29.0 - 1e-6:
     kick_times.append(beat)
     place(music, highpass_fft(K, 38), beat, 0.4)
     bar_pos = round(((beat - 1.0) % 2.0) / 0.5)  # 0..3 within bar
@@ -155,15 +155,15 @@ while beat < 19.0 - 1e-6:
         place(music, CL, beat, 0.22, 0.05)
         place(verb_send, CL, beat, 0.12)
     place(music, hat(), beat + 0.25, 0.07, 0.35)
-    if beat >= 13.5:  # extra 16th hats for lift in the teacher scene
+    if 17.0 <= beat < 24.0:  # extra 16th hats for lift in the teacher + projector scenes
         place(music, hat(), beat + 0.125, 0.035, -0.3)
         place(music, hat(), beat + 0.375, 0.035, -0.3)
     beat += 0.5
-place(music, hat(True), 18.75, 0.06, 0.2)
+place(music, hat(True), 28.75, 0.06, 0.2)
 
 # ── bass ────────────────────────────────────────────────────────────────────
 for s, e, ch, root in bars:
-    if s < 3.0 or s >= 19.0:
+    if s < 3.0 or s >= 29.0:
         continue
     for step in range(8):  # 8th notes
         t = s + step * 0.25
@@ -173,8 +173,8 @@ for s, e, ch, root in bars:
         v *= env_adsr(n, a=0.004, d=0.08, s=0.55, r=0.06)
         place(music, highpass_fft(lowpass_fft(v, 700), 35), t, 0.13)
 # outro sub
-n = int((DUR - 19.0) * SR)
-place(music, sine(midi(41), n) * env_adsr(n, a=0.02, d=0.4, s=0.7, r=1.2), 19.0, 0.12)
+n = int((DUR - 29.0) * SR)
+place(music, sine(midi(41), n) * env_adsr(n, a=0.02, d=0.4, s=0.7, r=1.2), 29.0, 0.12)
 
 # ── pluck arpeggio (intro + phone scenes, light) ────────────────────────────
 def pluck(m, dur=0.22):
@@ -183,7 +183,7 @@ def pluck(m, dur=0.22):
 
 
 for s, e, ch, _ in bars:
-    if not (s < 3.0 or 6.5 <= s < 13.5 or s >= 19.0):
+    if not (s < 3.0 or 7.0 <= s < 17.0 or 24.0 <= s < 27.0 or s >= 29.0):
         continue
     tones = sorted(set(ch))[1:4] + [sorted(set(ch))[1] + 12]
     for step in range(int((min(e, DUR - 0.5) - s) / 0.25)):
@@ -210,9 +210,18 @@ crash_n = int(1.6 * SR)
 crash = highpass_fft(rng.standard_normal(crash_n), 5000) * decay(crash_n, 0.45)
 place(music, crash, 3.0, 0.06, 0.1)
 place(verb_send, crash, 3.0, 0.05)
-for tw, d in ((T["s3"]["phoneIn"] - 0.25, 0.3), (T["s3"]["slide"] - 0.05, 0.4), (T["s4"]["exit"] - 0.05, 0.35), (T["s6"]["wipe"] - 0.3, 0.35)):
+for tw, d in (
+    (T["s2"]["exit"], 0.3),
+    (T["start"]["exit"], 0.3),
+    (T["join"]["slide"] - 0.05, 0.4),
+    (T["ask"]["exit"] - 0.05, 0.35),
+    (T["board"]["exit"], 0.3),
+    (T["present"]["exit"], 0.3),
+    (T["outro"]["wipe"] - 0.3, 0.35),
+):
     place(sfx, whoosh(d), tw, 0.07)
-place(music, crash, T["s6"]["wipe"] + 0.05, 0.045, -0.1)
+place(music, crash, T["board"]["in"], 0.035, 0.2)
+place(music, crash, T["outro"]["wipe"] + 0.05, 0.045, -0.1)
 
 # ── SFX, all pitched to F-major pentatonic ──────────────────────────────────
 PENT = [65, 67, 69, 72, 74, 77, 79, 81, 84, 86, 89]  # F4 G4 A4 C5 D5 F5 …
@@ -249,7 +258,7 @@ def sparkle(t, base=5, gain=0.05):
 
 
 # typing
-for i, tt in enumerate(T["s1"]["typing"] + T["s4"]["typing"]):
+for i, tt in enumerate(T["s1"]["typing"] + T["ask"]["typing"]):
     place(sfx, tick(), tt, 0.1 + 0.03 * ((i * 7) % 3), ((i * 5) % 7 - 3) * 0.08)
 # send + votes racing up
 place(sfx, pop(84), T["s1"]["send"], 0.12)
@@ -268,41 +277,56 @@ gl = np.sin(2 * np.pi * np.cumsum(np.linspace(midi(77), midi(89), gn)) / SR) * e
 place(sfx, gl, T["s2"]["squiggle"], 0.03, -0.2)
 place(verb_send, gl, T["s2"]["squiggle"], 0.03)
 place(sfx, pop(81), T["s2"]["sticker"], 0.1, 0.4)
+# step 1: the join code appears digit by digit
+for i, td in enumerate(T["start"]["codeDigits"]):
+    m = [77, 79, 81, 84, 86, 89][i]
+    place(sfx, blip(m + 12, 0.08, 0.3), td, 0.035, 0.3 - i * 0.1)
+    place(verb_send, blip(m + 12, 0.08), td, 0.03)
 # code digits climb the scale
-for i, td in enumerate(T["s3"]["digits"]):
+for i, td in enumerate(T["join"]["digits"]):
     m = [77, 79, 81, 84, 86, 89][i]
     place(sfx, blip(m, 0.11, 0.35), td, 0.06, -0.2 + i * 0.08)
     place(verb_send, blip(m, 0.11), td, 0.04)
-place(sfx, tick(), T["s3"]["press"], 0.25)
-place(sfx, pop(84), T["s3"]["press"] + 0.01, 0.1)
+place(sfx, tick(), T["join"]["press"], 0.25)
+place(sfx, pop(84), T["join"]["press"] + 0.01, 0.1)
 # similar-doubt chime + upvote tap
-place(sfx, bell(81, 0.8), T["s4"]["similar"], 0.05, -0.2)
-place(sfx, bell(84, 0.8), T["s4"]["similar"] + 0.1, 0.05, 0.2)
-place(verb_send, bell(81, 0.8), T["s4"]["similar"], 0.05)
-place(sfx, pop(86), T["s4"]["tap"], 0.12)
-sparkle(T["s4"]["tap"] + 0.04, base=5, gain=0.035)
+place(sfx, bell(81, 0.8), T["ask"]["similar"], 0.05, -0.2)
+place(sfx, bell(84, 0.8), T["ask"]["similar"] + 0.1, 0.05, 0.2)
+place(verb_send, bell(81, 0.8), T["ask"]["similar"], 0.05)
+place(sfx, pop(86), T["ask"]["tap"], 0.12)
+sparkle(T["ask"]["tap"] + 0.04, base=5, gain=0.035)
 # teacher board votes
-for i, v in enumerate(T["s5"]["votes"]):
+for i, v in enumerate(T["board"]["votes"]):
     m = PENT[4 + (i % 5)] + 12
     place(sfx, blip(m, 0.06), v["t"], 0.025, 0.4 if i % 2 else -0.4)
+# projector: votes keep landing
+for i, v in enumerate(T["present"]["votes"]):
+    m = PENT[5 + (i % 4)] + 12
+    place(sfx, blip(m, 0.06), v["t"], 0.03, 0.35 if i % 2 else -0.35)
+    place(verb_send, blip(m, 0.06), v["t"], 0.02)
+# analytics: bars grow with a soft rising sweep
+gn2 = int(0.7 * SR)
+sweep = np.sin(2 * np.pi * np.cumsum(np.linspace(midi(65), midi(77), gn2)) / SR) * env_adsr(gn2, a=0.1, d=0.2, s=0.6, r=0.3)
+place(sfx, sweep, T["stats"]["in"] + 0.3, 0.03, 0.2)
+place(verb_send, sweep, T["stats"]["in"] + 0.3, 0.04)
 # mark answered + confetti
-place(sfx, tick(), T["s5"]["click"], 0.3)
-place(sfx, pop(84), T["s5"]["click"] + 0.01, 0.1)
-sparkle(T["s5"]["confetti"], base=5, gain=0.06)
+place(sfx, tick(), T["board"]["click"], 0.3)
+place(sfx, pop(84), T["board"]["click"] + 0.01, 0.1)
+sparkle(T["board"]["confetti"], base=5, gain=0.06)
 cn = int(1.2 * SR)
 shimmer = highpass_fft(rng.standard_normal(cn), 6000) * decay(cn, 0.3) * np.linspace(1, 0, cn)
-place(sfx, shimmer, T["s5"]["confetti"], 0.035)
-place(verb_send, shimmer, T["s5"]["confetti"], 0.04)
+place(sfx, shimmer, T["board"]["confetti"], 0.035)
+place(verb_send, shimmer, T["board"]["confetti"], 0.04)
 # blobby boing + final chord bell
 bn = int(0.35 * SR)
 tb = np.arange(bn) / SR
 fb = midi(72) * (1 + 0.06 * np.sin(2 * np.pi * 14 * tb)) * (1 + 0.3 * np.exp(-tb * 20))
 boing = np.sin(2 * np.pi * np.cumsum(fb) / SR) * decay(bn, 0.09)
-place(sfx, boing, T["s6"]["blobby"], 0.09)
-place(verb_send, boing, T["s6"]["blobby"], 0.05)
+place(sfx, boing, T["outro"]["blobby"], 0.09)
+place(verb_send, boing, T["outro"]["blobby"], 0.05)
 for i, m in enumerate([65, 72, 77, 81]):
-    place(sfx, bell(m + 12, 2.0), 19.0 + i * 0.03, 0.045, -0.4 + i * 0.25)
-    place(verb_send, bell(m + 12, 2.0), 19.0 + i * 0.03, 0.05)
+    place(sfx, bell(m + 12, 2.0), 29.0 + i * 0.03, 0.045, -0.4 + i * 0.25)
+    place(verb_send, bell(m + 12, 2.0), 29.0 + i * 0.03, 0.05)
 
 # ── mix ─────────────────────────────────────────────────────────────────────
 # sidechain: duck music (except drums already in) slightly on each kick

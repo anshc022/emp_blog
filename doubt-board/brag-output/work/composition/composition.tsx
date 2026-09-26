@@ -7,11 +7,13 @@
  * animations (list re-ranking) are deterministic too.
  */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { flushSync } from "react-dom";
 import confetti from "canvas-confetti";
 import { GrainGradient } from "@paper-design/shaders-react";
-import { ArrowRightIcon, EyesIcon, LockKeyIcon, PaperPlaneTiltIcon, PlusIcon, PowerIcon, PresentationChartIcon, SealCheckIcon, TrashIcon } from "@phosphor-icons/react";
+import { ArrowRightIcon, CopyIcon, EyesIcon, LinkSimpleIcon, LockKeyIcon, PaperPlaneTiltIcon, PlusIcon, PowerIcon, PresentationChartIcon, SealCheckIcon, SparkleIcon, TrashIcon } from "@phosphor-icons/react";
 
+import { AnalyticsView } from "@/components/analytics-view";
 import { Avatar } from "@/components/art/avatar";
 import { Blobby } from "@/components/art/blobby";
 import { Sparkle } from "@/components/art/doodles";
@@ -22,11 +24,14 @@ import { DoubtList } from "@/components/doubt-list";
 import { JoinCode } from "@/components/join-code";
 import { LiveStatus } from "@/components/live-status";
 import { OtpInput } from "@/components/otp-input";
+import { PresentMode } from "@/components/present-mode";
 import { UpvoteButton } from "@/components/upvote-button";
 import { Button } from "@/components/ui/button";
 import { Segmented } from "@/components/ui/segmented";
 import { Switch } from "@/components/ui/switch";
+import type { Analytics } from "@/lib/analytics";
 import type { DoubtDTO } from "@/lib/serialize";
+import type { SessionDTO } from "@/lib/sessions";
 import { cn } from "@/lib/utils";
 
 import T from "./timeline.json";
@@ -102,6 +107,32 @@ function Paper({ children }: { children?: React.ReactNode }) {
     </div>
   );
 }
+
+/** "step 2" sticker that sits above each explainer caption. */
+function Step({ n, style, className }: { n: number; style?: React.CSSProperties; className?: string }) {
+  return (
+    <span
+      className={cn(
+        "bg-lime text-lime-foreground font-display inline-flex items-center gap-2 rounded-full border-2 border-[#16131c] px-5 py-2 text-3xl font-extrabold shadow-[3px_3px_0_0_#16131c]",
+        className,
+      )}
+      style={style}
+    >
+      step {n}
+    </span>
+  );
+}
+
+const SESSION: SessionDTO = {
+  id: "demo",
+  title: "Data Structures: Live Q&A",
+  subject: "Computer Science",
+  isActive: true,
+  createdAt: new Date(0).toISOString(),
+  endedAt: null,
+  joinCode: "482913",
+  isOwner: true,
+};
 
 function Caret({ t, on = true }: { t: number; on?: boolean }) {
   return (
@@ -299,7 +330,7 @@ function SceneReveal({ t }: { t: number }) {
   let wi = 0;
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ opacity: 1 - out, transform: `translateY(${-out * 40}px)` }}>
-      <div className="mb-14 flex items-center gap-7">
+      <div className="mb-12 flex items-center gap-7">
         <div style={{ transform: `scale(${logo}) rotate(${(1 - logo) * -25}deg)` }}>
           <LogoMark className="size-32" />
         </div>
@@ -348,8 +379,11 @@ function SceneReveal({ t }: { t: number }) {
           </span>
         ))}
       </h1>
+      <p className="text-muted-foreground mt-10 text-[44px] font-medium" style={enter(t, s.sub, 0.4, 24)}>
+        a live Q&amp;A board for your classroom.
+      </p>
       <span
-        className="bg-lime text-lime-foreground shadow-sticker font-display absolute right-[250px] bottom-[150px] rounded-2xl border-2 border-[#16131c] px-6 py-3 text-4xl font-extrabold"
+        className="bg-lime text-lime-foreground shadow-sticker font-display absolute right-[190px] bottom-[110px] rounded-2xl border-2 border-[#16131c] px-6 py-3 text-4xl font-extrabold"
         style={{ transform: `rotate(6deg) scale(${sticker})`, opacity: p(t, s.sticker, s.sticker + 0.1) }}
       >
         anonymous by default 🕵️
@@ -362,7 +396,7 @@ function SceneReveal({ t }: { t: number }) {
 
 // ── scenes 3 + 4: the phone ───────────────────────────────────────────────
 function PhoneJoin({ t }: { t: number }) {
-  const s = T.s3;
+  const s = T.join;
   // The real OtpInput autofocuses its first box; hide the caret for the video.
   useEffect(() => {
     const el = document.activeElement as HTMLElement | null;
@@ -396,7 +430,7 @@ function PhoneJoin({ t }: { t: number }) {
 }
 
 function PhoneSession({ t }: { t: number }) {
-  const s = T.s4;
+  const s = T.ask;
   const sim = eo(p(t, s.similar, s.similar + 0.3));
   const tapped = t >= s.tap;
   return (
@@ -450,25 +484,31 @@ function PhoneSession({ t }: { t: number }) {
 }
 
 function ScenePhone({ t }: { t: number }) {
-  const s3 = T.s3;
-  const s4 = T.s4;
+  const s3 = T.join;
+  const s4 = T.ask;
   const inK = eo(p(t, s3.phoneIn, s3.phoneIn + 0.5));
   const outK = eio(p(t, s4.exit, s4.exit + 0.35));
   const slide = eio(p(t, s3.slide, s3.slide + 0.45));
-  const cap3 = enter(t, s3.caption, 0.4, 40, 9.25, 0.25);
+  const cap3 = enter(t, s3.caption, 0.4, 40, 12.75, 0.25);
   const cap4a = enter(t, s4.caption1, 0.4, 40, s4.exit, 0.3);
   const cap4b = enter(t, s4.caption2, 0.4, 40, s4.exit, 0.3);
   return (
     <>
       <div className="absolute top-0 left-[170px] flex h-full w-[900px] flex-col justify-center">
-        {t < 9.6 ? (
-          <h2 className="text-[112px] leading-[0.98] font-extrabold tracking-[-0.03em]" style={cap3}>
-            join with a
-            <br />
-            <span className="font-serif-i text-primary text-[128px] font-normal">6-digit code.</span>
-          </h2>
+        {t < 13.05 ? (
+          <div style={cap3}>
+            <Step n={2} className="mb-8" />
+            <h2 className="text-[104px] leading-[0.98] font-extrabold tracking-[-0.03em]">
+              students join
+              <br />
+              <span className="font-serif-i text-primary text-[120px] font-normal">with the code.</span>
+            </h2>
+          </div>
         ) : (
           <h2 className="text-[112px] leading-[0.98] font-extrabold tracking-[-0.03em]">
+            <span className="mb-8 block" style={cap4a}>
+              <Step n={3} />
+            </span>
             <span className="block" style={cap4a}>
               ask anonymously.
             </span>
@@ -503,7 +543,7 @@ const BOARD = [
 ];
 
 function SceneTeacher({ t, onConfetti }: { t: number; onConfetti: (x: number, y: number) => void }) {
-  const s = T.s5;
+  const s = T.board;
   const inK = eo(p(t, s.in, s.in + 0.5));
   const answered = t >= s.click + 0.05;
   const targetRef = useRef<HTMLSpanElement>(null);
@@ -546,14 +586,20 @@ function SceneTeacher({ t, onConfetti }: { t: number; onConfetti: (x: number, y:
   return (
     <>
       <h2
-        className="absolute top-[70px] left-[170px] text-[84px] leading-none font-extrabold tracking-[-0.03em]"
-        style={enter(t, s.caption, 0.4, 30)}
+        className="absolute top-[70px] left-[170px] flex items-center gap-6 text-[76px] leading-none font-extrabold tracking-[-0.03em]"
+        style={enter(t, s.caption, 0.4, 30, s.exit, 0.3)}
       >
-        teachers see what the room needs <span className="font-serif-i text-primary font-normal">— live.</span>
+        <Step n={4} />
+        <span>
+          the teacher sees what matters <span className="font-serif-i text-primary font-normal">— live.</span>
+        </span>
       </h2>
       <div
         className="bg-card shadow-pop absolute top-[215px] left-[170px] h-[900px] w-[1580px] overflow-hidden rounded-[28px] border"
-        style={{ opacity: inK, transform: `translateY(${(1 - inK) * 260}px)` }}
+        style={{
+          opacity: inK * (1 - eio(p(t, s.exit, s.exit + 0.3))),
+          transform: `translateY(${(1 - inK) * 260 - eio(p(t, s.exit, s.exit + 0.3)) * 80}px)`,
+        }}
       >
         <div className="flex h-12 items-center gap-2 border-b px-5">
           <span className="size-3 rounded-full bg-[#ff5f57]" />
@@ -619,7 +665,7 @@ function SceneTeacher({ t, onConfetti }: { t: number; onConfetti: (x: number, y:
               />
               <div className="absolute inset-0 bg-[radial-gradient(60%_55%_at_50%_55%,rgb(13_11_18/0.8),transparent)]" />
               <p className="relative text-xs font-bold tracking-[0.2em] text-white/70 uppercase">Join code</p>
-              <JoinCode code={T.s3.code} className="relative mt-1 block text-5xl" />
+              <JoinCode code={T.join.code} className="relative mt-1 block text-5xl" />
             </div>
             <div className="grid grid-cols-3 gap-2">
               {[
@@ -642,15 +688,187 @@ function SceneTeacher({ t, onConfetti }: { t: number; onConfetti: (x: number, y:
           </aside>
         </div>
       </div>
-      {t >= s.cursor && t < 17.6 && <Cursor x={cx} y={cy} down={down} />}
+      {t >= s.cursor && t < s.exit && <Cursor x={cx} y={cy} down={down} />}
       <Tap t={t} at={s.click} x={target.x} y={target.y} />
+    </>
+  );
+}
+
+// ── step 1: teacher starts a session ─────────────────────────────────────
+function SceneStart({ t }: { t: number }) {
+  const s = T.start;
+  const card = eo(p(t, s.card, s.card + 0.5));
+  const out = eio(p(t, s.exit, s.exit + 0.3));
+  const shown = s.codeDigits.filter((d) => d <= t).length;
+  const code = T.join.code;
+  return (
+    <div className="absolute inset-0" style={{ opacity: 1 - out, transform: `translateY(${-out * 40}px)` }}>
+      <div className="absolute top-0 left-[170px] flex h-full w-[640px] flex-col justify-center" style={enter(t, s.caption, 0.4, 40)}>
+        <Step n={1} className="mb-8 w-fit" />
+        <h2 className="text-[104px] leading-[0.98] font-extrabold tracking-[-0.03em]">
+          teacher starts
+          <br />
+          <span className="font-serif-i text-primary text-[120px] font-normal">a session.</span>
+        </h2>
+      </div>
+      <div
+        className="absolute top-1/2 left-[860px] flex w-[900px] flex-col items-center text-center"
+        style={{ opacity: card, transform: `translateY(calc(-50% + ${(1 - card) * 60}px))` }}
+      >
+        <span className="bg-lime text-lime-foreground inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xl font-bold">
+          <SparkleIcon weight="fill" className="size-5" /> you&apos;re live
+        </span>
+        <h3 className="mt-4 text-5xl font-extrabold">{SESSION.title}</h3>
+        <p className="text-muted-foreground mt-1 text-2xl font-semibold">{SESSION.subject}</p>
+        <div className="grain shadow-pop relative mt-8 w-full overflow-hidden rounded-[2.2rem] px-6 py-12 text-white">
+          <GrainGradient
+            className="absolute inset-0 size-full"
+            colorBack="#0d0b12"
+            colors={[...GRAIN_PRESETS.aurora.colors]}
+            shape="corners"
+            intensity={0.45}
+            softness={0.6}
+            noise={0.3}
+            speed={0}
+            maxPixelCount={1280 * 720}
+            minPixelRatio={1}
+            frame={t * 650}
+          />
+          <div className="absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_55%,rgb(13_11_18/0.8),transparent)]" />
+          <p className="relative text-lg font-bold tracking-[0.2em] text-white/70 uppercase">
+            students go to <span className="text-white">/join</span> and enter
+          </p>
+          <div className="font-display relative mt-2 text-[150px] leading-none font-extrabold tracking-[0.06em] tabular-nums">
+            {code.split("").map((d, i) => {
+              const k = back(p(t, s.codeDigits[i], s.codeDigits[i] + 0.3));
+              return (
+                <span key={i}>
+                  {i === 3 && <span className="mx-[0.12em] opacity-40">·</span>}
+                  <span className="inline-block" style={{ opacity: i < shown ? 1 : 0.12, transform: `translateY(${(1 - k) * 30}px)` }}>
+                    {i < shown ? d : "0"}
+                  </span>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+        <div className="mt-8 flex gap-3">
+          <Button variant="outline" size="lg">
+            <CopyIcon weight="bold" /> Copy code
+          </Button>
+          <Button variant="outline" size="lg">
+            <LinkSimpleIcon weight="bold" /> Copy link
+          </Button>
+          <Button size="lg">
+            Open live board <ArrowRightIcon weight="bold" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── present mode (the real component, framed as a projector screen) ──────
+const PRESENT_BASE = [
+  { id: "A", votes: 8, created: 1, text: "Why is binary search O(log n) and not O(n/2)?", topic: "Big-O" },
+  { id: "B", votes: 6, created: 2, text: "Does recursion always use more memory than a loop?", topic: "Recursion" },
+  { id: "D", votes: 4, created: 3, text: "What's the difference between an array and a linked list in terms of memory?", topic: "Arrays" },
+  { id: "E", votes: 2, created: 5, text: "Can we get one more example of a hash collision?", topic: "Hashing" },
+  { id: "F", votes: 1, created: 6, text: "When would I use a queue instead of a stack?", topic: "Queues" },
+];
+
+function ScenePresent({ t }: { t: number }) {
+  const s = T.present;
+  const inK = eo(p(t, s.in, s.in + 0.5));
+  const out = eio(p(t, s.exit, s.exit + 0.3));
+  const doubts = useMemo(
+    () =>
+      PRESENT_BASE.map((d) => ({ ...d, votes: d.votes + s.votes.filter((v) => v.id === d.id && v.t <= t).length }))
+        .sort((a, b) => b.votes - a.votes || a.created - b.created)
+        .map((d) => doubt({ id: d.id, text: d.text, topic: d.topic, upvoteCount: d.votes })),
+    [t, s.votes],
+  );
+  const scale = 1440 / 1920;
+  return (
+    <div className="absolute inset-0" style={{ opacity: 1 - out }}>
+      <h2
+        className="absolute top-[56px] left-0 w-full text-center text-[76px] leading-none font-extrabold tracking-[-0.03em]"
+        style={enter(t, s.caption, 0.4, 30)}
+      >
+        put the top 5 <span className="font-serif-i text-primary font-normal">on the projector.</span>
+      </h2>
+      <div
+        className="shadow-pop absolute top-[190px] left-[240px] overflow-hidden rounded-[32px] border-[10px] border-[#16131c] bg-[#16131c]"
+        style={{ width: 1440 + 20, height: 810 + 20, opacity: inK, transform: `translateY(${(1 - inK) * 200}px) scale(${0.96 + 0.04 * inK})` }}
+      >
+        {/* transformed wrapper: PresentMode's position:fixed resolves against this box */}
+        <div style={{ width: 1920, height: 1080, transform: `scale(${scale})`, transformOrigin: "0 0" }}>
+          <PresentMode session={SESSION} doubts={doubts} presence={28} onClose={() => {}} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── analytics (the real page, fed demo data through the query cache) ─────
+const ANALYTICS: Analytics = {
+  timezone: "UTC",
+  topTopics: [
+    { topic: "Recursion", count: 9, upvotes: 31 },
+    { topic: "Big-O", count: 7, upvotes: 26 },
+    { topic: "Linked lists", count: 6, upvotes: 19 },
+    { topic: "Arrays", count: 4, upvotes: 11 },
+    { topic: "Hashing", count: 3, upvotes: 8 },
+  ],
+  status: { answered: 23, open: 11, total: 34 },
+  byHour: Array.from({ length: 24 }, (_, hour) => ({ hour, count: [0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 7, 11, 5, 2, 6, 8, 3, 1, 0, 0, 0, 0, 0, 0][hour] })),
+  sessions: [],
+};
+
+function SceneStats({ t }: { t: number }) {
+  const s = T.stats;
+  const qc = useQueryClient();
+  const [ready] = useState(() => {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    qc.setQueryData(["analytics", tz], { ...ANALYTICS, timezone: tz });
+    return true;
+  });
+  const inK = eo(p(t, s.in, s.in + 0.5));
+  return (
+    <>
+      <h2
+        className="absolute top-[70px] left-[170px] text-[84px] leading-none font-extrabold tracking-[-0.03em]"
+        style={enter(t, s.caption, 0.4, 30)}
+      >
+        then see what <span className="font-serif-i text-primary font-normal">confused the class.</span>
+      </h2>
+      <div
+        className="bg-card shadow-pop absolute top-[215px] left-[170px] h-[900px] w-[1580px] overflow-hidden rounded-[28px] border"
+        style={{ opacity: inK, transform: `translateY(${(1 - inK) * 260}px)` }}
+      >
+        <div className="flex h-12 items-center gap-2 border-b px-5">
+          <span className="size-3 rounded-full bg-[#ff5f57]" />
+          <span className="size-3 rounded-full bg-[#febc2e]" />
+          <span className="size-3 rounded-full bg-[#28c840]" />
+          <span className="bg-muted text-muted-foreground mx-auto rounded-full px-4 py-1 text-xs font-medium">
+            doubtboard · teacher / analytics
+          </span>
+        </div>
+        <div className="bg-background bg-grid h-full overflow-hidden px-12 pt-8">
+          {ready && t >= s.in + 0.1 && (
+            <div style={{ width: 1484 / 0.86, transform: "scale(0.86)", transformOrigin: "0 0" }}>
+              <AnalyticsView />
+            </div>
+          )}
+        </div>
+      </div>
     </>
   );
 }
 
 // ── scene 6: punchline ────────────────────────────────────────────────────
 function SceneOutro({ t }: { t: number }) {
-  const s = T.s6;
+  const s = T.outro;
   const b = back(p(t, s.blobby, s.blobby + 0.5));
   const words = ["no", "question", "is", "a", "silly", "question."];
   return (
@@ -682,7 +900,9 @@ function SceneOutro({ t }: { t: number }) {
             doubt<span className="text-[#a58bff]">board</span>
           </span>
           <span className="h-10 w-px bg-white/25" />
-          <span className="font-mono text-3xl text-white/75">github.com/anshc022/emp_blog</span>
+          <span className="text-4xl text-white/75">
+            made by <span className="font-display font-bold text-white">Ankita Rahi</span>
+          </span>
         </div>
       </div>
     </Ink>
@@ -693,17 +913,17 @@ function SceneOutro({ t }: { t: number }) {
 export function BragComposition() {
   const [t, setT] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [burst, setBurst] = useState({ x: 960, y: 540 });
 
   useEffect(() => {
     const w = window as unknown as { __bragSeek: (s: number) => void; __bragReady: boolean };
     w.__bragSeek = (s: number) => flushSync(() => setT(s));
+    // PresentMode asks for browser fullscreen on mount; in the video it must stay in its frame.
+    Element.prototype.requestFullscreen = () => Promise.reject(new Error("fullscreen disabled for the video"));
     document.fonts.ready.then(() => (w.__bragReady = true));
   }, []);
 
   const fireConfetti = useMemo(
     () => (x: number, y: number) => {
-      setBurst({ x, y });
       const c = canvasRef.current;
       if (!c) return;
       const shoot = confetti.create(c, { resize: false });
@@ -716,7 +936,7 @@ export function BragComposition() {
   );
 
   const s2 = T.s2;
-  const s6 = T.s6;
+  const s6 = T.outro;
   const wipe2 = eio(p(t, s2.wipe, s2.wipe + 0.45));
   const wipe6 = eio(p(t, s6.wipe, s6.wipe + 0.45));
 
@@ -730,16 +950,19 @@ export function BragComposition() {
           style={{ clipPath: wipe2 < 1 ? `circle(${wipe2 * 2300}px at 1240px 520px)` : undefined }}
         >
           <Paper>
-            {t < 6.6 && <SceneReveal t={t} />}
-            {t >= T.s3.phoneIn && t < 13.7 && <ScenePhone t={t} />}
-            {t >= T.s5.in && <SceneTeacher t={t} onConfetti={fireConfetti} />}
+            {t < T.start.in && <SceneReveal t={t} />}
+            {t >= T.start.in && t < T.join.phoneIn && <SceneStart t={t} />}
+            {t >= T.join.phoneIn && t < T.board.in + 0.2 && <ScenePhone t={t} />}
+            {t >= T.board.in && t < T.present.in && <SceneTeacher t={t} onConfetti={fireConfetti} />}
+            {t >= T.present.in && t < T.stats.in && <ScenePresent t={t} />}
+            {t >= T.stats.in && <SceneStats t={t} />}
           </Paper>
         </div>
       )}
       {t >= s6.wipe && (
         <div
           className="absolute inset-0"
-          style={{ clipPath: wipe6 < 1 ? `circle(${wipe6 * 2400}px at ${burst.x}px ${burst.y}px)` : undefined }}
+          style={{ clipPath: wipe6 < 1 ? `circle(${wipe6 * 2400}px at 960px 560px)` : undefined }}
         >
           <SceneOutro t={t} />
         </div>
