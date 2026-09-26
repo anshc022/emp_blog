@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { LogOutIcon } from "lucide-react";
@@ -26,7 +27,7 @@ export function initials(name: string) {
     .join("");
 }
 
-export function UserMenu({ user }: { user: AuthUser }) {
+export function UserMenu({ user, links = [] }: { user: AuthUser; links?: { href: string; label: string }[] }) {
   const router = useRouter();
   const qc = useQueryClient();
 
@@ -57,6 +58,12 @@ export function UserMenu({ user }: { user: AuthUser }) {
           <div className="text-muted-foreground text-xs font-normal capitalize">{user.role}</div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {links.map((l) => (
+          <DropdownMenuItem key={l.href} asChild className="sm:hidden">
+            <Link href={l.href}>{l.label}</Link>
+          </DropdownMenuItem>
+        ))}
+        {links.length > 0 && <DropdownMenuSeparator className="sm:hidden" />}
         <DropdownMenuItem onSelect={logout}>
           <LogOutIcon /> Log out
         </DropdownMenuItem>

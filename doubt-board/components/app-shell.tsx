@@ -28,7 +28,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           <NavLinks links={links} />
           <div className="ml-auto flex items-center gap-1">
             <ThemeToggle />
-            <UserMenu user={user} />
+            <UserMenu user={user} links={links} />
           </div>
         </div>
       </header>
