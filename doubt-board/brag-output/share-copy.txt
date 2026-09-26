@@ -1,0 +1,1 @@
+Every class has a question nobody asks. Live Doubt Board lets students post it anonymously, upvote the ones they're also stuck on, and the teacher sees a live ranked list — "is this on the exam??" finally gets its 31 upvotes. Built with Next.js, MongoDB and Socket.io.
