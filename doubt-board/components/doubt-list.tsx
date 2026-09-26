@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 /** Animated list container: children re-order smoothly thanks to `layout` on each card. */
 export function DoubtList({ children }: { children: React.ReactNode }) {
   return (
-    <ul className="flex flex-col gap-3">
+    <ul className="flex flex-col gap-4 pt-2">
       <AnimatePresence initial={false} mode="popLayout">
         {children}
       </AnimatePresence>
@@ -15,17 +15,20 @@ export function DoubtList({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function DoubtListSkeleton({ count = 4 }: { count?: number }) {
+export function DoubtListSkeleton({ count = 3 }: { count?: number }) {
   return (
-    <div className="flex flex-col gap-3" aria-busy="true" aria-label="Loading doubts">
+    <div className="flex flex-col gap-4 pt-2" aria-busy="true" aria-label="Loading doubts">
       {Array.from({ length: count }, (_, i) => (
-        <div key={i} className="bg-card flex gap-4 rounded-xl border p-4">
-          <Skeleton className="h-14 w-12" />
-          <div className="flex-1 space-y-2">
-            <Skeleton className="h-4 w-40" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-2/3" />
+        <div key={i} className="bg-card flex gap-4 rounded-3xl border p-5">
+          <div className="flex-1 space-y-3">
+            <div className="flex items-center gap-2.5">
+              <Skeleton className="size-8 rounded-full" />
+              <Skeleton className="h-4 w-32 rounded-full" />
+            </div>
+            <Skeleton className="h-4 w-full rounded-full" />
+            <Skeleton className="h-4 w-2/3 rounded-full" />
           </div>
+          <Skeleton className="h-16 w-14 rounded-2xl" />
         </div>
       ))}
     </div>

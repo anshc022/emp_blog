@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import NumberFlow from "@number-flow/react";
+import { ArrowFatUpIcon, UsersThreeIcon, XIcon } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowBigUpIcon, XIcon } from "lucide-react";
 
+import { Blobby } from "@/components/art/blobby";
+import { GrainBg } from "@/components/art/grain-bg";
 import { LogoMark } from "@/components/brand";
 import { JoinCode } from "@/components/join-code";
-import { Button } from "@/components/ui/button";
 import type { DoubtDTO } from "@/lib/serialize";
 import type { SessionDTO } from "@/lib/sessions";
 
@@ -46,42 +48,56 @@ export function PresentMode({
       ref={ref}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="bg-background fixed inset-0 z-[60] flex flex-col overflow-y-auto p-6 sm:p-10 lg:p-14"
+      className="grain fixed inset-0 z-[60] flex flex-col overflow-y-auto bg-[#0d0b12] p-6 text-white sm:p-10 lg:p-14"
       role="dialog"
       aria-label="Present mode"
     >
-      <header className="flex flex-wrap items-center gap-x-8 gap-y-3">
+      <GrainBg preset="aurora" speed={0.35} intensity={0.4} />
+      <div aria-hidden className="pointer-events-none fixed inset-0 bg-[#0d0b12]/55" />
+
+      <header className="relative flex flex-wrap items-center gap-x-8 gap-y-4">
         <div className="flex min-w-0 items-center gap-4">
-          <LogoMark className="size-12 shrink-0" />
+          <LogoMark className="size-14 shrink-0" />
           <div className="min-w-0">
-            <p className="text-primary text-lg font-medium">{session.subject}</p>
-            <h1 className="truncate text-2xl font-semibold tracking-tight lg:text-4xl">{session.title}</h1>
+            <p className="text-lime text-lg font-bold">{session.subject}</p>
+            <h1 className="truncate text-3xl font-extrabold lg:text-5xl">{session.title}</h1>
           </div>
         </div>
-        <div className="ml-auto flex items-center gap-6">
+        <div className="ml-auto flex items-center gap-3">
           {session.isActive && session.joinCode && (
-            <div className="text-right">
-              <p className="text-muted-foreground text-sm font-medium tracking-wider uppercase">Join code</p>
+            <div className="rounded-3xl border border-white/10 bg-[#0d0b12]/50 px-6 py-3 text-right backdrop-blur-xl">
+              <p className="text-xs font-bold tracking-[0.2em] text-white/60 uppercase">Join code</p>
               <JoinCode code={session.joinCode} className="text-4xl lg:text-6xl" />
             </div>
           )}
-          <div className="text-right">
-            <p className="text-muted-foreground text-sm font-medium tracking-wider uppercase">Students</p>
-            <p className="text-4xl font-bold tabular-nums lg:text-6xl">{presence}</p>
+          <div className="rounded-3xl border border-white/10 bg-[#0d0b12]/50 px-6 py-3 text-right backdrop-blur-xl">
+            <p className="flex items-center justify-end gap-1.5 text-xs font-bold tracking-[0.2em] text-white/60 uppercase">
+              <UsersThreeIcon weight="fill" className="size-4" /> Here
+            </p>
+            <NumberFlow value={presence} className="font-display text-4xl font-extrabold lg:text-6xl" />
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Exit present mode" className="size-12">
-            <XIcon className="size-6" />
-          </Button>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Exit present mode"
+            className="grid size-14 cursor-pointer place-items-center rounded-full border border-white/15 bg-white/10 backdrop-blur-md hover:bg-white/20"
+          >
+            <XIcon weight="bold" className="size-6" />
+          </button>
         </div>
       </header>
 
-      <div className="mt-10 flex-1">
+      <div className="relative mt-10 flex-1">
         {top.length === 0 ? (
-          <div className="text-muted-foreground grid h-full place-items-center text-center text-3xl lg:text-5xl">
-            No doubts yet — everyone&apos;s a genius today 🎉
+          <div className="grid h-full place-items-center text-center">
+            <div>
+              <Blobby mood="sleepy" className="mx-auto size-48 text-white" />
+              <p className="mt-6 text-4xl font-extrabold lg:text-6xl">No doubts yet</p>
+              <p className="font-serif-i mt-2 text-3xl text-white/70 lg:text-4xl">everyone&apos;s a genius today</p>
+            </div>
           </div>
         ) : (
-          <ol className="flex flex-col gap-4 lg:gap-6">
+          <ol className="flex flex-col gap-4 lg:gap-5">
             <AnimatePresence initial={false} mode="popLayout">
               {top.map((d, i) => (
                 <motion.li
@@ -91,22 +107,20 @@ export function PresentMode({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ type: "spring", stiffness: 300, damping: 32 }}
-                  className="bg-card flex items-center gap-6 rounded-2xl border p-5 shadow-sm lg:gap-10 lg:p-8"
+                  className={
+                    i === 0
+                      ? "flex items-center gap-6 rounded-[2rem] bg-white p-6 text-[#16131c] shadow-2xl lg:gap-10 lg:p-8"
+                      : "flex items-center gap-6 rounded-[2rem] border border-white/10 bg-[#0d0b12]/55 p-5 backdrop-blur-xl lg:gap-10 lg:p-7"
+                  }
                 >
-                  <span className="text-muted-foreground/60 w-12 text-4xl font-bold tabular-nums lg:text-6xl">
-                    {i + 1}
-                  </span>
-                  <p className="flex-1 text-2xl leading-snug font-medium md:text-3xl lg:text-5xl">{d.text}</p>
-                  <div className="text-primary flex flex-col items-center">
-                    <ArrowBigUpIcon className="size-10 fill-current lg:size-14" />
-                    <motion.span
-                      key={d.upvoteCount}
-                      initial={{ scale: 1.5 }}
-                      animate={{ scale: 1 }}
-                      className="text-3xl font-bold tabular-nums lg:text-5xl"
-                    >
-                      {d.upvoteCount}
-                    </motion.span>
+                  <span className="font-display w-14 text-center text-4xl font-extrabold opacity-40 lg:text-6xl">{i + 1}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold tracking-wider uppercase opacity-60">#{d.topic.toLowerCase()}</p>
+                    <p className="text-2xl leading-snug font-semibold md:text-3xl lg:text-[2.6rem] lg:leading-tight">{d.text}</p>
+                  </div>
+                  <div className="bg-lime text-lime-foreground flex min-w-24 flex-col items-center rounded-3xl px-4 py-3 lg:min-w-32">
+                    <ArrowFatUpIcon weight="fill" className="size-8 lg:size-10" />
+                    <NumberFlow value={d.upvoteCount} className="font-display text-4xl font-extrabold lg:text-6xl" />
                   </div>
                 </motion.li>
               ))}
@@ -114,7 +128,7 @@ export function PresentMode({
           </ol>
         )}
       </div>
-      <p className="text-muted-foreground mt-8 text-center text-sm">Press Esc to exit</p>
+      <p className="relative mt-8 text-center text-sm text-white/50">Press Esc to exit</p>
     </motion.div>
   );
 }

@@ -1,11 +1,12 @@
 "use client";
 
 import { forwardRef } from "react";
+import { ChalkboardTeacherIcon, FireIcon, SealCheckIcon } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
-import { CheckCircle2Icon, EyeOffIcon, UserIcon } from "lucide-react";
 
+import { Avatar } from "@/components/art/avatar";
+import { TopicSticker } from "@/components/art/topic-sticker";
 import { UpvoteButton } from "@/components/upvote-button";
-import { Badge } from "@/components/ui/badge";
 import { timeAgo } from "@/hooks/useTime";
 import type { DoubtDTO } from "@/lib/serialize";
 import { cn } from "@/lib/utils";
@@ -30,65 +31,84 @@ export const DoubtCard = forwardRef<HTMLLIElement, Props>(function DoubtCard(
     : doubt.status !== "open"
       ? "Already answered"
       : undefined;
+  const hot = rank === 1 && doubt.upvoteCount > 0;
 
   return (
     <motion.li
       ref={ref}
       layout
-      initial={{ opacity: 0, y: 12, scale: 0.98 }}
+      initial={{ opacity: 0, y: 16, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.15 } }}
-      transition={{ type: "spring", stiffness: 420, damping: 36 }}
+      exit={{ opacity: 0, scale: 0.94, transition: { duration: 0.15 } }}
+      transition={{ type: "spring", stiffness: 420, damping: 34 }}
       className={cn(
-        "bg-card flex gap-3 rounded-xl border p-3 shadow-xs sm:gap-4 sm:p-4",
-        doubt.isMine && "border-primary/40 ring-primary/10 ring-2",
+        "group bg-card shadow-soft relative flex gap-3 rounded-3xl border p-4 transition-shadow hover:shadow-pop sm:gap-4 sm:p-5",
+        doubt.isMine && "border-primary/50 ring-primary/10 ring-4",
+        hot && "border-tangerine/50",
       )}
     >
-      <div className="flex flex-col items-center gap-2">
-        <UpvoteButton
-          count={doubt.upvoteCount}
-          active={doubt.hasUpvoted}
-          disabled={voteDisabled}
-          onClick={voteDisabled ? undefined : onUpvote}
-          title={voteTitle}
-        />
-        {rank !== undefined && <span className="text-muted-foreground text-xs font-medium">#{rank}</span>}
-      </div>
+      {hot && (
+        <span className="bg-tangerine absolute -top-2.5 left-5 inline-flex rotate-[-3deg] items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold text-white shadow-sm">
+          <FireIcon weight="fill" className="size-3.5" /> top doubt
+        </span>
+      )}
 
       <div className="min-w-0 flex-1">
-        <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-          <Badge variant="secondary" className="rounded-md">
-            {doubt.topic}
-          </Badge>
-          <span className="inline-flex items-center gap-1">
-            {doubt.author ? <UserIcon className="size-3" /> : <EyeOffIcon className="size-3" />}
-            {doubt.author ? doubt.author.name : "Anonymous"}
-          </span>
-          {doubt.isMine && (
-            <Badge className="h-5 rounded-md px-1.5" aria-label="Your doubt">
-              You
-            </Badge>
-          )}
-          <span aria-hidden>·</span>
-          <time dateTime={doubt.createdAt}>{timeAgo(doubt.createdAt, now)}</time>
-        </div>
-
-        <p className="mt-1.5 text-[15px] leading-relaxed break-words whitespace-pre-wrap">{doubt.text}</p>
-
-        {doubt.status === "answered" && (
-          <div className="bg-success/10 text-foreground mt-3 rounded-lg px-3 py-2 text-sm">
-            <div className="text-success flex items-center gap-1.5 text-xs font-semibold">
-              <CheckCircle2Icon className="size-3.5" /> Answered
-              {doubt.answeredAt && (
-                <span className="text-muted-foreground font-normal">· {timeAgo(doubt.answeredAt, now)}</span>
+        <div className="flex items-center gap-2.5">
+          <Avatar name={doubt.author?.name} seed={doubt.id} />
+          <div className="min-w-0 leading-tight">
+            <div className="flex items-center gap-1.5 text-sm font-semibold">
+              <span className="truncate">{doubt.author ? doubt.author.name : "Anonymous"}</span>
+              {doubt.isMine && (
+                <span className="bg-lime text-lime-foreground rounded-md px-1.5 py-px text-[10px] font-extrabold tracking-wider uppercase">
+                  You
+                </span>
               )}
             </div>
-            {doubt.answer && <p className="mt-1 whitespace-pre-wrap">{doubt.answer}</p>}
+            <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
+              {rank !== undefined && <span className="font-semibold">#{rank}</span>}
+              {rank !== undefined && <span aria-hidden>·</span>}
+              <time dateTime={doubt.createdAt}>{timeAgo(doubt.createdAt, now)}</time>
+            </div>
+          </div>
+          <TopicSticker topic={doubt.topic} className="ml-auto hidden sm:inline-flex" />
+        </div>
+
+        <p className="mt-3 text-[16px] leading-relaxed font-medium break-words whitespace-pre-wrap sm:text-[17px]">
+          {doubt.text}
+        </p>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2 sm:hidden">
+          <TopicSticker topic={doubt.topic} />
+        </div>
+
+        {doubt.status === "answered" && (
+          <div className="mt-4 rounded-2xl border border-success/25 bg-success/8 p-3.5">
+            <div className="text-success flex items-center gap-1.5 text-xs font-bold tracking-wide uppercase">
+              <SealCheckIcon weight="fill" className="size-4" /> Answered
+              {doubt.answeredAt && (
+                <span className="text-muted-foreground font-medium normal-case">· {timeAgo(doubt.answeredAt, now)}</span>
+              )}
+            </div>
+            {doubt.answer && (
+              <p className="mt-1.5 flex gap-2 text-sm leading-relaxed">
+                <ChalkboardTeacherIcon weight="duotone" className="text-success mt-0.5 size-4 shrink-0" />
+                <span className="whitespace-pre-wrap">{doubt.answer}</span>
+              </p>
+            )}
           </div>
         )}
+
+        {actions && <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-dashed pt-3">{actions}</div>}
       </div>
 
-      {actions && <div className="flex shrink-0 flex-col items-end gap-1">{actions}</div>}
+      <UpvoteButton
+        count={doubt.upvoteCount}
+        active={doubt.hasUpvoted}
+        disabled={voteDisabled}
+        onClick={voteDisabled ? undefined : onUpvote}
+        title={voteTitle}
+      />
     </motion.li>
   );
 });

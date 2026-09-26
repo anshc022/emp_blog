@@ -1,37 +1,41 @@
 import Link from "next/link";
 import {
-  ArrowBigUpIcon,
+  ArrowFatUpIcon,
   ArrowRightIcon,
-  BarChart3Icon,
-  EyeOffIcon,
-  KeyRoundIcon,
-  MonitorPlayIcon,
-  SparklesIcon,
-  ZapIcon,
-} from "lucide-react";
+  ChartBarIcon,
+  DetectiveIcon,
+  EyesIcon,
+  KeyIcon,
+  LightningIcon,
+  PresentationChartIcon,
+} from "@phosphor-icons/react/dist/ssr";
 
+import { Blobby } from "@/components/art/blobby";
+import { CurlyArrow, Sparkle, Squiggle } from "@/components/art/doodles";
+import { GrainBg } from "@/components/art/grain-bg";
 import { Brand } from "@/components/brand";
+import { LiveDemo } from "@/components/landing/live-demo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { getUser } from "@/lib/auth";
 
+const MARQUEE = [
+  "why do we add +C 🤔",
+  "can you redo step 3?",
+  "what's the intuition behind eigenvectors",
+  "is recursion always slower?",
+  "why is friction not in the formula",
+  "wait what's a pointer",
+  "how is this different from last week's",
+  "is this on the exam??",
+  "why does the graph flip there",
+  "can we get one more example pls",
+];
+
 const steps = [
-  { icon: KeyRoundIcon, title: "Teacher starts a session", text: "Get a 6-digit code and put it on the projector." },
-  { icon: EyeOffIcon, title: "Students ask, anonymously", text: "Join from any phone. Post a doubt without the fear of looking silly." },
-  { icon: ArrowBigUpIcon, title: "The class upvotes", text: "Same doubt? Upvote it. The most-needed questions rise to the top, live." },
-];
-
-const features = [
-  { icon: ZapIcon, title: "Real-time", text: "New doubts, votes and answers appear instantly on every screen — no refresh." },
-  { icon: SparklesIcon, title: "Duplicate hints", text: "While typing, students see similar doubts already asked and can upvote instead." },
-  { icon: MonitorPlayIcon, title: "Present mode", text: "Top 5 doubts full-screen in huge text, made for the projector." },
-  { icon: BarChart3Icon, title: "Analytics", text: "See the most confusing topics, peak doubt hours and how much you covered." },
-];
-
-const preview = [
-  { votes: 14, text: "Why is the derivative of e^x equal to itself?", topic: "Derivatives", you: false },
-  { votes: 9, text: "When do I use the chain rule vs the product rule?", topic: "Derivatives", you: true },
-  { votes: 5, text: "What does it mean for a limit to not exist?", topic: "Limits", you: false },
+  { icon: KeyIcon, title: "Teacher starts a session", text: "One click, one 6-digit code on the projector.", tint: "bg-primary text-primary-foreground" },
+  { icon: DetectiveIcon, title: "Students ask anonymously", text: "From any phone. No name, no judgement, no fear.", tint: "bg-lime text-lime-foreground" },
+  { icon: ArrowFatUpIcon, title: "The room upvotes", text: "Same doubt? Tap ▲. What matters most floats up, live.", tint: "bg-tangerine text-white" },
 ];
 
 export default async function Home() {
@@ -39,154 +43,242 @@ export default async function Home() {
   const home = user?.role === "teacher" ? "/teacher" : "/join";
 
   return (
-    <div className="flex min-h-dvh flex-col overflow-x-hidden">
-      <header className="mx-auto flex w-full max-w-6xl items-center gap-2 px-4 py-4">
-        <Brand />
-        <div className="ml-auto flex items-center gap-1 sm:gap-2">
-          <ThemeToggle />
-          {user ? (
-            <Button asChild>
-              <Link href={home}>Open app</Link>
-            </Button>
-          ) : (
-            <>
-              <Button variant="ghost" asChild>
-                <Link href="/login">Log in</Link>
+    <div className="flex min-h-dvh flex-col overflow-x-clip">
+      {/* ───────────── HERO ───────────── */}
+      <section className="grain relative overflow-hidden rounded-b-[2.5rem] bg-[#0d0b12] text-white sm:rounded-b-[3.5rem]">
+        <GrainBg preset="aurora" intensity={0.45} scrim="left" />
+        <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center gap-2 px-5 py-5">
+          <Brand invert />
+          <div className="ml-auto flex items-center gap-1 sm:gap-2">
+            <ThemeToggle className="text-white hover:bg-white/10" />
+            {user ? (
+              <Button variant="lime" asChild>
+                <Link href={home}>Open app</Link>
               </Button>
-              <Button asChild className="hidden sm:inline-flex">
-                <Link href="/register">Get started</Link>
-              </Button>
-            </>
-          )}
-        </div>
-      </header>
-
-      <main className="flex-1">
-        <section className="relative">
-          <div className="bg-primary/20 absolute top-0 left-1/2 -z-10 h-80 w-[48rem] -translate-x-1/2 rounded-full blur-3xl" />
-          <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 pt-10 pb-20 sm:pt-16 lg:grid-cols-2">
-            <div>
-              <span className="bg-primary/10 text-primary inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium">
-                <span className="bg-primary size-1.5 animate-pulse rounded-full" /> Live classroom Q&amp;A
-              </span>
-              <h1 className="mt-5 text-4xl leading-[1.08] font-semibold tracking-tight text-balance sm:text-6xl">
-                The doubts your class is <span className="text-primary">too shy</span> to ask.
-              </h1>
-              <p className="text-muted-foreground mt-5 max-w-lg text-lg text-pretty">
-                Students post doubts anonymously and upvote each other&apos;s. You see a live, ranked list of what the
-                room actually needs explained — and answer it before moving on.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Button size="lg" asChild>
-                  <Link href={user ? home : "/register"}>
-                    {user ? "Open app" : "Get started — it's free"} <ArrowRightIcon />
-                  </Link>
+            ) : (
+              <>
+                <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-white" asChild>
+                  <Link href="/login">Log in</Link>
                 </Button>
-                {!user && (
-                  <Button size="lg" variant="outline" asChild>
-                    <Link href="/login">I have an account</Link>
-                  </Button>
-                )}
-              </div>
-            </div>
+                <Button variant="lime" asChild className="hidden sm:inline-flex">
+                  <Link href="/register">Get started</Link>
+                </Button>
+              </>
+            )}
+          </div>
+        </header>
 
-            <div className="relative mx-auto w-full max-w-md" aria-hidden>
-              <div className="bg-card rotate-1 rounded-2xl border p-4 pb-14 shadow-2xl shadow-indigo-500/10">
-                <div className="mb-4 flex items-center justify-between">
+        <div className="relative mx-auto grid max-w-6xl items-center gap-14 px-5 pt-8 pb-20 sm:pt-14 lg:grid-cols-[1.15fr_1fr] lg:pb-28">
+          <div>
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-sm font-semibold backdrop-blur">
+              <span className="relative flex size-2">
+                <span className="bg-lime absolute inline-flex size-full animate-ping rounded-full opacity-70" />
+                <span className="bg-lime relative inline-flex size-2 rounded-full" />
+              </span>
+              live classroom Q&amp;A
+            </span>
+            <h1 className="mt-6 text-[3.2rem] leading-[0.95] font-extrabold tracking-[-0.035em] text-balance sm:text-7xl lg:text-[5.5rem]">
+              ask the question{" "}
+              <span className="relative inline-block whitespace-nowrap">
+                <span className="font-serif-i text-lime font-normal">everyone</span>
+                <Squiggle className="text-bubblegum absolute -bottom-2 left-0" />
+              </span>{" "}
+              is thinking.
+            </h1>
+            <p className="mt-7 max-w-lg text-lg text-white/75 sm:text-xl">
+              Students post doubts anonymously and upvote each other&apos;s. Teachers get a live, ranked list of what the
+              room actually needs explained.
+            </p>
+            <div className="mt-9 flex flex-wrap gap-3">
+              <Button size="lg" variant="lime" asChild className="h-14 px-8 text-base">
+                <Link href={user ? home : "/register"}>
+                  {user ? "Open app" : "Get started — it's free"} <ArrowRightIcon weight="bold" />
+                </Link>
+              </Button>
+              {!user && (
+                <Button
+                  size="lg"
+                  variant="ghost"
+                  asChild
+                  className="h-14 border border-white/20 bg-white/10 px-8 text-base text-white backdrop-blur hover:bg-white/20 hover:text-white"
+                >
+                  <Link href="/join">I have a code</Link>
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* phone mock */}
+          <div className="relative mx-auto w-full max-w-[340px]" aria-hidden>
+            <div className="absolute -top-10 -left-16 z-10 hidden sm:block">
+              <Blobby mood="curious" className="size-28 rotate-[-10deg] text-white" />
+            </div>
+            <span className="bg-lime text-lime-foreground shadow-sticker absolute -right-4 -bottom-5 z-10 rotate-[6deg] rounded-2xl border-2 border-[#16131c] px-4 py-2 font-display text-lg font-extrabold sm:-right-10">
+              100% anonymous 🕵️
+            </span>
+            <Sparkle className="text-lime absolute -top-6 right-6 size-8" />
+            <div className="rounded-[2.8rem] border border-white/20 bg-white/10 p-2.5 shadow-2xl backdrop-blur-xl">
+              <div className="rounded-[2.3rem] bg-[#f6f3ec] p-4 pt-3">
+                <div className="mx-auto mb-3 h-5 w-24 rounded-full bg-[#16131c]" />
+                <div className="mb-3 flex items-center justify-between px-1">
                   <div>
-                    <p className="text-primary text-xs font-medium">Calculus</p>
-                    <p className="font-semibold">Derivatives in Practice</p>
+                    <p className="text-[10px] font-bold tracking-wider text-[#6c47ff] uppercase">Calculus</p>
+                    <p className="font-display text-base leading-tight font-extrabold text-[#16131c]">Derivatives 101</p>
                   </div>
-                  <span className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs">
-                    <span className="bg-success size-1.5 rounded-full" /> Live · 32
+                  <span className="flex items-center gap-1 rounded-full border border-[#e5e0d6] bg-white px-2 py-1 text-[10px] font-bold text-[#16131c]">
+                    <span className="size-1.5 rounded-full bg-[#12a150]" /> LIVE · 32
                   </span>
                 </div>
-                <ul className="space-y-2.5">
-                  {preview.map((p, i) => (
-                    <li
-                      key={p.text}
-                      className={`flex gap-3 rounded-xl border p-3 ${p.you ? "border-primary/40 ring-primary/10 ring-2" : ""}`}
-                    >
-                      <div
-                        className={`flex h-12 w-10 shrink-0 flex-col items-center justify-center rounded-lg border text-sm font-semibold ${i === 0 ? "bg-primary text-primary-foreground border-primary" : ""}`}
-                      >
-                        <ArrowBigUpIcon className={`size-4 ${i === 0 ? "fill-current" : ""}`} />
-                        {p.votes}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-muted-foreground flex items-center gap-1.5 text-[11px]">
-                          <span className="bg-secondary rounded px-1.5 py-0.5 font-medium">{p.topic}</span>
-                          <EyeOffIcon className="size-3" /> Anonymous
-                          {p.you && (
-                            <span className="bg-primary text-primary-foreground rounded px-1 font-medium">You</span>
-                          )}
-                        </div>
-                        <p className="mt-1 text-sm">{p.text}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="bg-card absolute -bottom-4 -left-2 -rotate-3 rounded-xl border px-4 py-3 shadow-xl sm:-left-10">
-                <p className="text-muted-foreground text-[10px] font-medium tracking-widest uppercase">Join code</p>
-                <p className="font-mono text-2xl font-bold tracking-widest">482 913</p>
+                <LiveDemo />
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section className="bg-muted/40 border-y">
-          <div className="mx-auto max-w-6xl px-4 py-16">
-            <h2 className="text-center text-2xl font-semibold tracking-tight sm:text-3xl">How it works</h2>
-            <ol className="mt-10 grid gap-6 sm:grid-cols-3">
-              {steps.map((s, i) => (
-                <li key={s.title} className="bg-card rounded-2xl border p-6">
-                  <div className="flex items-center gap-3">
-                    <span className="bg-primary text-primary-foreground grid size-8 place-items-center rounded-full text-sm font-semibold">
-                      {i + 1}
-                    </span>
-                    <s.icon className="text-primary size-5" />
-                  </div>
-                  <h3 className="mt-4 font-semibold">{s.title}</h3>
-                  <p className="text-muted-foreground mt-1 text-sm">{s.text}</p>
-                </li>
+      {/* ───────────── MARQUEE ───────────── */}
+      <section className="relative -mt-2 overflow-hidden py-10" aria-label="Examples of doubts">
+        {[0, 1].map((row) => (
+          <div key={row} className="flex overflow-hidden py-1.5 [mask-image:linear-gradient(90deg,transparent,black_10%,black_90%,transparent)]">
+            <div
+              className="animate-marquee flex shrink-0 gap-3 pr-3"
+              style={row ? { animationDirection: "reverse", animationDuration: "55s" } : undefined}
+            >
+              {[...MARQUEE, ...MARQUEE].map((q, i) => (
+                <span
+                  key={i}
+                  className={`bg-card flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold ${
+                    (i + row) % 4 === 0 ? "rotate-[-1.5deg]" : (i + row) % 4 === 2 ? "rotate-[1.5deg]" : ""
+                  }`}
+                >
+                  <span className="bg-lime text-lime-foreground rounded-full px-1.5 text-[11px] font-extrabold">
+                    ▲{(((i * 7 + row * 3) % 23) + 3).toString()}
+                  </span>
+                  {q}
+                </span>
               ))}
-            </ol>
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-6xl px-4 py-16">
-          <div className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
-            {features.map((f) => (
-              <div key={f.title}>
-                <div className="bg-primary/10 text-primary grid size-10 place-items-center rounded-xl">
-                  <f.icon className="size-5" />
-                </div>
-                <h3 className="mt-4 font-semibold">{f.title}</h3>
-                <p className="text-muted-foreground mt-1 text-sm">{f.text}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-6xl px-4 pb-20">
-          <div className="from-primary rounded-3xl bg-gradient-to-br to-indigo-800 px-6 py-12 text-center text-white sm:px-12">
-            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Ready for your next class?</h2>
-            <p className="mx-auto mt-2 max-w-md text-white/80">Set up a session in 10 seconds. Students join with a code — no app to install.</p>
-            <div className="mt-6 flex flex-wrap justify-center gap-3">
-              <Button size="lg" variant="secondary" asChild>
-                <Link href={user ? home : "/register?role=teacher"}>I&apos;m a teacher</Link>
-              </Button>
-              <Button size="lg" variant="outline" className="border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white" asChild>
-                <Link href={user ? home : "/register"}>I&apos;m a student</Link>
-              </Button>
             </div>
           </div>
-        </section>
-      </main>
+        ))}
+      </section>
 
-      <footer className="text-muted-foreground border-t py-6 text-center text-sm">
-        Live Doubt Board · built with Next.js, MongoDB &amp; Socket.io
+      {/* ───────────── HOW IT WORKS ───────────── */}
+      <section className="mx-auto w-full max-w-6xl px-5 py-12 sm:py-16">
+        <p className="text-primary text-sm font-bold tracking-widest uppercase">How it works</p>
+        <h2 className="mt-2 max-w-2xl text-4xl leading-[1.02] font-extrabold sm:text-6xl">
+          three steps. <span className="font-serif-i text-muted-foreground font-normal">zero awkward silences.</span>
+        </h2>
+        <ol className="relative mt-12 grid gap-5 md:grid-cols-3">
+          {steps.map((s, i) => (
+            <li key={s.title} className="bg-card shadow-soft relative rounded-3xl border p-6 pt-7">
+              <span className="font-display text-muted-foreground/25 absolute top-3 right-5 text-7xl leading-none font-extrabold">
+                {i + 1}
+              </span>
+              <span className={`grid size-14 place-items-center rounded-2xl ${s.tint}`}>
+                <s.icon weight="duotone" className="size-7" />
+              </span>
+              <h3 className="mt-6 text-2xl font-bold">{s.title}</h3>
+              <p className="text-muted-foreground mt-2">{s.text}</p>
+              {i < 2 && <CurlyArrow className="text-muted-foreground/50 absolute -right-12 -bottom-10 z-10 hidden rotate-12 md:block" />}
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      {/* ───────────── BENTO ───────────── */}
+      <section className="mx-auto w-full max-w-6xl px-5 py-12 sm:py-16">
+        <div className="grid auto-rows-[minmax(200px,auto)] gap-4 md:grid-cols-6">
+          <div className="bg-lime text-lime-foreground relative overflow-hidden rounded-3xl p-7 md:col-span-4">
+            <LightningIcon weight="duotone" className="size-10" />
+            <h3 className="mt-4 text-3xl font-extrabold sm:text-4xl">stupidly real-time.</h3>
+            <p className="mt-2 max-w-md text-[#16131c]/75">
+              New doubts, upvotes and answers hit every screen instantly over WebSockets. No refresh button in sight.
+            </p>
+            <div className="absolute -right-6 -bottom-8 hidden gap-2 sm:flex">
+              {[14, 22, 9].map((n, i) => (
+                <span
+                  key={i}
+                  className="font-display grid h-24 w-20 place-items-center rounded-3xl border-2 border-[#16131c] bg-white text-3xl font-extrabold"
+                  style={{ transform: `rotate(${(i - 1) * 8}deg) translateY(${i === 1 ? -12 : 0}px)` }}
+                >
+                  ▲{n}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-card shadow-soft rounded-3xl border p-7 md:col-span-2">
+            <DetectiveIcon weight="duotone" className="text-primary size-10" />
+            <h3 className="mt-4 text-2xl font-extrabold">actually anonymous</h3>
+            <p className="text-muted-foreground mt-2 text-sm">
+              Anonymous means anonymous — not even your teacher sees your name. Enforced on the server, not just hidden in
+              the UI.
+            </p>
+          </div>
+
+          <div className="bg-card shadow-soft rounded-3xl border p-7 md:col-span-2">
+            <EyesIcon weight="duotone" className="text-bubblegum size-10" />
+            <h3 className="mt-4 text-2xl font-extrabold">no duplicate spam</h3>
+            <p className="text-muted-foreground mt-2 text-sm">
+              While you type, similar doubts pop up — upvote instead of asking the same thing twice.
+            </p>
+          </div>
+
+          <div className="grain relative overflow-hidden rounded-3xl p-7 text-white md:col-span-2">
+            <GrainBg preset="sunset" speed={0.3} />
+            <PresentationChartIcon weight="duotone" className="relative size-10" />
+            <h3 className="relative mt-4 text-2xl font-extrabold">present mode</h3>
+            <p className="relative mt-2 text-sm text-white/80">Top 5 doubts full-screen, huge text, made for the projector.</p>
+          </div>
+
+          <div className="bg-card shadow-soft rounded-3xl border p-7 md:col-span-2">
+            <ChartBarIcon weight="duotone" className="text-tangerine size-10" />
+            <h3 className="mt-4 text-2xl font-extrabold">the vibe check</h3>
+            <p className="text-muted-foreground mt-2 text-sm">Which topics confuse your class, and when doubts peak.</p>
+            <svg viewBox="0 0 160 48" className="mt-4 h-12 w-full" aria-hidden>
+              {[18, 30, 22, 44, 34, 26, 38, 14].map((h, i) => (
+                <rect key={i} x={i * 20 + 2} y={48 - h} width="14" height={h} rx="4" fill={i === 3 ? "var(--tangerine)" : "var(--primary)"} opacity={i === 3 ? 1 : 0.8} />
+              ))}
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      {/* ───────────── CTA ───────────── */}
+      <section className="mx-auto w-full max-w-6xl px-5 pt-6 pb-20">
+        <div className="grain relative overflow-hidden rounded-[2.5rem] px-6 py-16 text-center text-white sm:px-12 sm:py-20">
+          <GrainBg preset="aurora" speed={0.4} intensity={0.45} scrim="center" />
+          <Blobby mood="proud" className="relative mx-auto size-28 text-white" />
+          <h2 className="relative mx-auto mt-6 max-w-2xl text-4xl leading-[1.02] font-extrabold sm:text-6xl">
+            your next class, <span className="font-serif-i text-lime font-normal">but everyone speaks up.</span>
+          </h2>
+          <p className="relative mx-auto mt-4 max-w-md text-white/75">
+            Set up a session in 10 seconds. Students join with a code — nothing to install.
+          </p>
+          <div className="relative mt-8 flex flex-wrap justify-center gap-3">
+            <Button size="lg" variant="lime" asChild className="h-14 px-8 text-base">
+              <Link href={user ? home : "/register?role=teacher"}>I&apos;m a teacher</Link>
+            </Button>
+            <Button
+              size="lg"
+              variant="ghost"
+              asChild
+              className="h-14 border border-white/20 bg-white/10 px-8 text-base text-white backdrop-blur hover:bg-white/20 hover:text-white"
+            >
+              <Link href={user ? home : "/register"}>I&apos;m a student</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      <footer className="text-muted-foreground border-t px-5 py-8">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 text-sm">
+          <Brand />
+          <p>
+            built with Next.js, MongoDB &amp; Socket.io ·{" "}
+            <span className="font-serif-i text-base">no question is a silly question</span>
+          </p>
+        </div>
       </footer>
     </div>
   );

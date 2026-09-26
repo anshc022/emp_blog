@@ -1,16 +1,20 @@
 import Link from "next/link";
 
+import { Blobby } from "@/components/art/blobby";
 import { Button } from "@/components/ui/button";
 
 export default function NotFound() {
   return (
-    <main className="grid min-h-dvh place-items-center p-6 text-center">
+    <main className="bg-grid grid min-h-dvh place-items-center p-6 text-center">
       <div>
-        <p className="text-primary font-mono text-6xl font-bold">404</p>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight">That&apos;s a doubt we can&apos;t answer</h1>
+        <Blobby mood="shocked" className="text-foreground mx-auto size-36 animate-float" />
+        <p className="font-display text-primary mt-6 text-7xl font-extrabold">404</p>
+        <h1 className="mt-2 text-3xl font-extrabold">
+          that&apos;s a doubt we <span className="font-serif-i font-normal">can&apos;t</span> answer
+        </h1>
         <p className="text-muted-foreground mt-2">The page you&apos;re looking for doesn&apos;t exist.</p>
-        <Button asChild className="mt-6">
-          <Link href="/">Back home</Link>
+        <Button asChild className="mt-8" size="lg">
+          <Link href="/">Take me home</Link>
         </Button>
       </div>
     </main>

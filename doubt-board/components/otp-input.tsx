@@ -66,9 +66,10 @@ export function OtpInput({
             else if (e.key === "ArrowRight") focus(i + 1);
           }}
           className={cn(
-            "bg-background size-12 rounded-xl border-2 text-center font-mono text-2xl font-semibold shadow-xs transition-all outline-none sm:size-16 sm:text-3xl",
-            "focus:border-primary focus:ring-primary/20 focus:ring-4",
-            d && "border-primary/60",
+            "bg-card font-display h-14 w-11 rounded-2xl border-2 text-center text-3xl font-bold shadow-xs transition-all outline-none sm:h-20 sm:w-16 sm:text-4xl",
+            "focus:border-primary focus:ring-primary/20 focus:-translate-y-0.5 focus:ring-4",
+            d && "border-foreground shadow-sticker",
+            i === 2 && "mr-2 sm:mr-4",
             invalid && "border-destructive focus:border-destructive focus:ring-destructive/20 animate-[shake_0.3s]",
           )}
         />

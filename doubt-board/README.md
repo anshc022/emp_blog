@@ -4,6 +4,8 @@ A real-time classroom doubt board. A teacher starts a session and shares a 6-dig
 
 **Stack:** Next.js 15 (App Router, TypeScript) · MongoDB + Mongoose · Socket.io on a custom Node server · JWT in an httpOnly cookie (`jsonwebtoken`, `bcryptjs`) · `zod` · Tailwind CSS 4 + shadcn/ui · `framer-motion` · `sonner` · `next-themes` · `recharts` · TanStack Query
 
+**UI kit:** `@paper-design/shaders-react` (animated grain-gradient backgrounds) · `@phosphor-icons/react` (duotone icons) · `@number-flow/react` (rolling counters) · `canvas-confetti` · `vaul` (mobile bottom sheet) · Bricolage Grotesque + Instrument Serif via Fontsource
+
 ## Features
 
 **Students**
@@ -20,6 +22,14 @@ A real-time classroom doubt board. A teacher starts a session and shares a 6-dig
 - Analytics: top 5 confusing topics (last 7 days), answered vs open, doubts by hour of day, and a per-session table
 
 **Everywhere**: light/dark mode, responsive from phone to projector, loading skeletons, empty states and error toasts.
+
+### Design
+
+- **Look:** a warm "paper" light theme and a deep "ink" dark theme. Electric violet is the primary colour, with lime, tangerine and bubblegum as sticker accents. Design tokens live in `app/globals.css`.
+- **Shaders:** animated grain-gradient backgrounds (`components/art/grain-bg.tsx`) sit behind the landing hero, the auth panel, the join-code cards and Present mode. They load client-only and fall back to a CSS gradient. The animation freezes for `prefers-reduced-motion` users and pauses when off-screen.
+- **Artwork:** hand-built SVGs in `components/art/`: the **Blobby** mascot (a speech bubble with five moods, used in empty states), doodles (squiggle, sparkle, curly arrow), detective avatars for anonymous doubts, and topic stickers. Anonymous avatars are coloured by the *doubt* id, never the author, so nothing links two anonymous doubts to the same person.
+- **Motion:** list re-ranking with `layout`, rolling vote and presence counts, a sliding tab thumb, confetti when you post a doubt, answer one or create a session, and a live-updating phone mockup on the landing page.
+- **Mobile:** students ask through a sticky "Ask" bar that opens a bottom sheet (Vaul). Topic chips scroll sideways, and the code-entry boxes are sized for thumbs.
 
 ## Prerequisites
 

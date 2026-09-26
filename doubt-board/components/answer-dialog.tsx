@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckIcon } from "lucide-react";
+import { SealCheckIcon } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -40,28 +40,32 @@ export function AnswerDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Mark as answered</DialogTitle>
-          <DialogDescription className="line-clamp-3">“{doubt.text}”</DialogDescription>
+          <DialogDescription asChild>
+            <blockquote className="bg-muted text-foreground mt-2 line-clamp-4 rounded-2xl border-l-4 border-primary px-4 py-3 text-left text-sm font-medium">
+              {doubt.text}
+            </blockquote>
+          </DialogDescription>
         </DialogHeader>
         <div className="grid gap-2">
           <Label htmlFor="answer">
-            Written answer <span className="text-muted-foreground font-normal">(optional)</span>
+            Quick written answer <span className="text-muted-foreground font-normal">(optional)</span>
           </Label>
           <Textarea
             id="answer"
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && (e.metaKey || e.ctrlKey) && submit()}
-            placeholder="Answered it out loud? Leave this empty — or jot a quick summary for later."
+            placeholder="Answered it out loud? Leave this empty — or jot a summary students can read later."
             className="min-h-28"
             maxLength={2000}
           />
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button variant="ghost" onClick={() => setOpen(false)}>
             Cancel
           </Button>
           <Button onClick={submit}>
-            <CheckIcon /> Mark answered
+            <SealCheckIcon weight="fill" /> Mark answered
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArchiveIcon, ArrowLeftIcon, BrainIcon, CheckCheckIcon, Trash2Icon } from "lucide-react";
+import { ArchiveIcon, ArrowLeftIcon, ChatCircleDotsIcon, TrashIcon } from "@phosphor-icons/react";
 
 import { AskBox } from "@/components/ask-box";
 import { Confirm } from "@/components/confirm-button";
@@ -11,8 +11,9 @@ import { DoubtList, DoubtListSkeleton } from "@/components/doubt-list";
 import { EmptyState } from "@/components/empty-state";
 import { LiveStatus } from "@/components/live-status";
 import { Button } from "@/components/ui/button";
+import { Drawer, DrawerContent, DrawerDescription, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
+import { Segmented } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSessionDoubts } from "@/hooks/useSessionDoubts";
 import { useNow } from "@/hooks/useTime";
 import type { DoubtDTO } from "@/lib/serialize";
@@ -20,20 +21,21 @@ import type { DoubtDTO } from "@/lib/serialize";
 export function StudentSession({ sessionId }: { sessionId: string }) {
   const s = useSessionDoubts(sessionId);
   const now = useNow();
-  const [tab, setTab] = useState("open");
+  const [tab, setTab] = useState<"open" | "answered">("open");
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const topics = useMemo(() => [...new Set([...s.open, ...s.answered].map((d) => d.topic))], [s.open, s.answered]);
   const all = useMemo(() => [...s.open, ...s.answered], [s.open, s.answered]);
+  const topics = useMemo(() => [...new Set(all.map((d) => d.topic))], [all]);
 
   if (s.sessionError) {
     return (
       <EmptyState
-        icon={ArchiveIcon}
-        title="Session not found"
+        mood="shocked"
+        title="Hmm, can't find that session"
         description={s.sessionError.message}
         action={
           <Button asChild>
-            <Link href="/join">Join another session</Link>
+            <Link href="/join">Try another code</Link>
           </Button>
         }
       />
@@ -41,123 +43,144 @@ export function StudentSession({ sessionId }: { sessionId: string }) {
   }
 
   const ended = s.session ? !s.session.isActive : false;
+  const list = tab === "open" ? s.open : s.answered;
 
-  const renderList = (list: DoubtDTO[], empty: React.ReactNode) =>
-    s.isLoading ? (
-      <DoubtListSkeleton />
-    ) : list.length === 0 ? (
-      empty
-    ) : (
-      <DoubtList>
-        {list.map((d, i) => (
-          <DoubtCard
-            key={d.id}
-            doubt={d}
-            now={now}
-            rank={d.status === "open" ? i + 1 : undefined}
-            canVote={!ended}
-            onUpvote={() => s.toggleUpvote.mutate(d.id)}
-            actions={
-              d.isMine ? (
-                <Confirm
-                  title="Delete your doubt?"
-                  description="It will disappear for everyone in the session."
-                  confirmLabel="Delete"
-                  destructive
-                  onConfirm={() => s.deleteDoubt.mutate(d.id)}
-                >
-                  <Button variant="ghost" size="icon" className="text-muted-foreground size-8" aria-label="Delete doubt">
-                    <Trash2Icon />
-                  </Button>
-                </Confirm>
-              ) : undefined
-            }
-          />
-        ))}
-      </DoubtList>
-    );
+  const askProps = {
+    sessionId,
+    existingTopics: topics,
+    liveDoubts: all,
+    onSubmit: (input: { text: string; topic: string; isAnonymous: boolean }) => s.createDoubt.mutateAsync(input),
+    onUpvote: (id: string) => s.toggleUpvote.mutate(id),
+  };
+
+  const renderCard = (d: DoubtDTO, i: number) => (
+    <DoubtCard
+      key={d.id}
+      doubt={d}
+      now={now}
+      rank={d.status === "open" ? i + 1 : undefined}
+      canVote={!ended}
+      onUpvote={() => s.toggleUpvote.mutate(d.id)}
+      actions={
+        d.isMine ? (
+          <Confirm
+            title="Delete your doubt?"
+            description="It disappears for everyone in the session."
+            confirmLabel="Delete"
+            destructive
+            onConfirm={() => s.deleteDoubt.mutate(d.id)}
+          >
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive -ml-2">
+              <TrashIcon weight="bold" /> Delete
+            </Button>
+          </Confirm>
+        ) : undefined
+      }
+    />
+  );
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-2xl pb-24 sm:pb-0">
       <Link
         href="/join"
-        className="text-muted-foreground hover:text-foreground mb-4 inline-flex items-center gap-1 text-sm"
+        className="text-muted-foreground hover:text-foreground mb-5 inline-flex items-center gap-1.5 text-sm font-semibold"
       >
-        <ArrowLeftIcon className="size-4" /> Join another
+        <ArrowLeftIcon weight="bold" className="size-4" /> another session
       </Link>
 
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          {s.session ? (
-            <>
-              <p className="text-primary text-sm font-medium">{s.session.subject}</p>
-              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{s.session.title}</h1>
-            </>
-          ) : (
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-8 w-64" />
-            </div>
-          )}
-        </div>
-        {s.session && <LiveStatus active={!ended} connected={s.connected} presence={s.presence} />}
-      </div>
+      <header className="mb-6 flex flex-col gap-4">
+        {s.session ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="bg-primary text-primary-foreground rounded-full px-3 py-1 text-xs font-bold">
+              {s.session.subject}
+            </span>
+            <LiveStatus active={!ended} connected={s.connected} presence={s.presence} />
+          </div>
+        ) : (
+          <Skeleton className="h-9 w-56 rounded-full" />
+        )}
+        {s.session ? (
+          <h1 className="text-3xl leading-tight font-extrabold text-balance sm:text-5xl">{s.session.title}</h1>
+        ) : (
+          <Skeleton className="h-12 w-3/4 rounded-2xl" />
+        )}
+      </header>
 
       {ended ? (
         <div
           role="status"
-          className="mb-6 flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm"
+          className="bg-card shadow-soft mb-8 flex items-center gap-4 rounded-3xl border-2 border-dashed p-5"
         >
-          <ArchiveIcon className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />
+          <div className="bg-muted grid size-12 shrink-0 place-items-center rounded-2xl">
+            <ArchiveIcon weight="duotone" className="size-6" />
+          </div>
           <div>
-            <p className="font-semibold">This session has ended</p>
-            <p className="text-muted-foreground">It&apos;s read-only now — you can still go through every doubt and answer.</p>
+            <p className="font-display text-lg font-bold">That&apos;s a wrap — session ended</p>
+            <p className="text-muted-foreground text-sm">Read-only now. Scroll through every doubt and answer below.</p>
           </div>
         </div>
       ) : (
-        s.session && (
-          <div className="mb-8">
-            <AskBox
-              sessionId={sessionId}
-              existingTopics={topics}
-              liveDoubts={all}
-              onSubmit={(input) => s.createDoubt.mutateAsync(input)}
-              onUpvote={(id) => s.toggleUpvote.mutate(id)}
-            />
-          </div>
-        )
+        s.session && <AskBox {...askProps} className="mb-8 hidden sm:block" />
       )}
 
-      <Tabs value={tab} onValueChange={setTab} className="gap-4">
-        <TabsList className="w-full sm:w-auto">
-          <TabsTrigger value="open" className="sm:px-5">
-            Open <span className="text-muted-foreground tabular-nums">{s.open.length}</span>
-          </TabsTrigger>
-          <TabsTrigger value="answered" className="sm:px-5">
-            Answered <span className="text-muted-foreground tabular-nums">{s.answered.length}</span>
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="open">
-          {renderList(
-            s.open,
-            <EmptyState
-              icon={BrainIcon}
-              title="No doubts yet — everyone's a genius today"
-              description={ended ? "Nobody left an open doubt in this session." : "Be the first to ask. It's anonymous by default."}
-            />,
-          )}
-        </TabsContent>
-        <TabsContent value="answered">
-          {renderList(
-            s.answered,
-            <EmptyState
-              icon={CheckCheckIcon}
-              title="Nothing answered yet"
-              description="When your teacher answers a doubt it'll show up here."
-            />,
-          )}
-        </TabsContent>
-      </Tabs>
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <Segmented
+          value={tab}
+          onChange={setTab}
+          options={[
+            { value: "open", label: "Open", count: s.open.length },
+            { value: "answered", label: "Answered", count: s.answered.length },
+          ]}
+          className="w-full sm:w-auto"
+        />
+      </div>
+
+      {s.isLoading ? (
+        <DoubtListSkeleton />
+      ) : list.length === 0 ? (
+        tab === "open" ? (
+          <EmptyState
+            className="mt-2"
+            mood={ended ? "sleepy" : "curious"}
+            title="No doubts yet — everyone's a genius today"
+            description={ended ? "Nobody left an open doubt here." : "Be the first to ask. It's anonymous, nobody will know."}
+          />
+        ) : (
+          <EmptyState
+            className="mt-2"
+            mood="sleepy"
+            title="Nothing answered yet"
+            description="When your teacher answers a doubt it lands here."
+          />
+        )
+      ) : (
+        <DoubtList>{list.map(renderCard)}</DoubtList>
+      )}
+
+      {/* Phones: composer lives in a bottom sheet behind a sticky bar. */}
+      {!ended && s.session && (
+        <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+          <div className="fixed inset-x-0 bottom-0 z-30 p-3 sm:hidden">
+            <DrawerTrigger asChild>
+              <button
+                type="button"
+                className="bg-foreground text-background shadow-pop flex h-14 w-full cursor-pointer items-center gap-3 rounded-full pr-2 pl-5 text-left"
+              >
+                <ChatCircleDotsIcon weight="duotone" className="size-6 shrink-0" />
+                <span className="flex-1 truncate text-[15px] font-medium opacity-80">Ask a doubt, anonymously…</span>
+                <span className="bg-lime text-lime-foreground rounded-full px-4 py-2 text-sm font-bold">Ask</span>
+              </button>
+            </DrawerTrigger>
+          </div>
+          <DrawerContent>
+            <div className="overflow-y-auto px-3 pt-1 pb-6">
+              <DrawerTitle className="px-2 pb-1">Ask a doubt</DrawerTitle>
+              <DrawerDescription className="px-2 pb-3">It&apos;s anonymous unless you flip the switch.</DrawerDescription>
+              <AskBox {...askProps} autoFocus onPosted={() => setDrawerOpen(false)} className="shadow-none" />
+            </div>
+          </DrawerContent>
+        </Drawer>
+      )}
     </div>
   );
 }

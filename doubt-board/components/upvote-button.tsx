@@ -1,11 +1,12 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
-import { ArrowBigUpIcon } from "lucide-react";
+import NumberFlow from "@number-flow/react";
+import { ArrowFatUpIcon } from "@phosphor-icons/react";
+import { motion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 
-/** Vertical upvote pill with a count that rolls up/down when it changes. */
+/** Capsule upvote button: lime when you've voted, count rolls with NumberFlow. */
 export function UpvoteButton({
   count,
   active,
@@ -19,47 +20,40 @@ export function UpvoteButton({
   disabled?: boolean;
   onClick?: () => void;
   title?: string;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md";
 }) {
   return (
     <motion.button
       type="button"
-      whileTap={disabled ? undefined : { scale: 0.88 }}
+      whileTap={disabled ? undefined : { scale: 0.85, rotate: -4 }}
+      whileHover={disabled ? undefined : { y: -2 }}
       onClick={onClick}
       disabled={disabled}
       title={title}
       aria-pressed={active}
       aria-label={`${active ? "Remove upvote" : "Upvote"} (${count})`}
       className={cn(
-        "flex shrink-0 flex-col items-center justify-center rounded-lg border font-semibold tabular-nums transition-colors outline-none",
+        "group flex shrink-0 flex-col items-center justify-center rounded-2xl border-2 font-display font-bold tabular-nums transition-colors outline-none",
         "focus-visible:ring-ring/50 focus-visible:ring-[3px]",
-        size === "sm" && "h-11 w-10 text-xs",
-        size === "md" && "h-14 w-12 text-sm",
-        size === "lg" && "h-24 w-20 text-3xl",
+        size === "sm" ? "h-12 w-11 text-sm" : "h-16 w-14 text-lg",
         active
-          ? "border-primary bg-primary text-primary-foreground shadow-primary/25 shadow-md"
-          : "bg-background hover:border-primary/50 hover:text-primary",
-        disabled && !active && "hover:text-foreground cursor-default hover:border-border",
+          ? "border-foreground bg-lime text-lime-foreground shadow-sticker"
+          : "bg-background border-border",
+        !disabled && !active && "hover:border-primary hover:text-primary cursor-pointer",
+        !disabled && active && "cursor-pointer",
+        disabled && !active && "text-muted-foreground cursor-default",
         disabled && "cursor-default",
       )}
     >
-      <ArrowBigUpIcon
-        className={cn(size === "lg" ? "size-9" : size === "sm" ? "size-4" : "size-5", active && "fill-current")}
-      />
-      <span className="relative h-[1.2em] overflow-hidden leading-[1.2em]">
-        <AnimatePresence mode="popLayout" initial={false}>
-          <motion.span
-            key={count}
-            initial={{ y: "100%", opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: "-100%", opacity: 0 }}
-            transition={{ type: "spring", stiffness: 500, damping: 32 }}
-            className="block"
-          >
-            {count}
-          </motion.span>
-        </AnimatePresence>
-      </span>
+      <motion.span
+        key={active ? "on" : "off"}
+        initial={active ? { y: 6, scale: 0.6 } : false}
+        animate={{ y: 0, scale: 1 }}
+        transition={{ type: "spring", stiffness: 600, damping: 15 }}
+      >
+        <ArrowFatUpIcon weight={active ? "fill" : "bold"} className={size === "sm" ? "size-4" : "size-5"} />
+      </motion.span>
+      <NumberFlow value={count} className="-mt-0.5 leading-none" />
     </motion.button>
   );
 }

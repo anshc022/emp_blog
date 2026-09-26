@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { BarChart3Icon, PlusIcon } from "lucide-react";
+import NumberFlow from "@number-flow/react";
+import { ChartBarIcon, ClockIcon, FireIcon, PlusIcon, SealCheckIcon } from "@phosphor-icons/react";
 import { useTheme } from "next-themes";
 import {
   Bar,
@@ -30,8 +31,8 @@ import { api } from "@/lib/api-client";
 // Validated with the dataviz palette checker (CVD separation, lightness band,
 // contrast) against each mode's card surface. Slot 1 = answered/primary, slot 2 = open.
 const PALETTE = {
-  light: { s1: "#4f46e5", s2: "#e0913a", grid: "#e7e7ee", axis: "#6b6b7b" },
-  dark: { s1: "#7f7af0", s2: "#c77a22", grid: "#2c2c3a", axis: "#a1a1b5" },
+  light: { s1: "#6c47ff", s2: "#f06a2c", grid: "#ece7de", axis: "#6b6577" },
+  dark: { s1: "#8f73ff", s2: "#d9692e", grid: "#26212f", axis: "#9d96ab" },
 };
 
 function usePalette() {
@@ -46,7 +47,7 @@ const hourLabel = (h: number) => `${h % 12 === 0 ? 12 : h % 12}${h < 12 ? "am" :
 function ChartTooltip({ active, payload, label, format }: TooltipContentProps<number, string> & { format: (p: Record<string, number | string>, label: unknown) => React.ReactNode }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-popover text-popover-foreground rounded-lg border px-3 py-2 text-xs shadow-md">
+    <div className="bg-popover text-popover-foreground shadow-pop rounded-xl border px-3 py-2 text-xs">
       {format(payload[0].payload as Record<string, number | string>, label)}
     </div>
   );
@@ -63,12 +64,14 @@ export function AnalyticsView() {
     enabled: !!tz,
   });
 
-  if (error) return <EmptyState icon={BarChart3Icon} title="Couldn't load analytics" description={error.message} />;
+  if (error) return <EmptyState mood="shocked" title="Couldn't load analytics" description={error.message} />;
 
   const header = (
     <div className="mb-8">
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Analytics</h1>
-      <p className="text-muted-foreground mt-1">Where your class gets stuck, and when.</p>
+      <h1 className="text-4xl font-extrabold sm:text-5xl">
+        the <span className="font-serif-i text-primary font-normal">vibe check</span>
+      </h1>
+      <p className="text-muted-foreground mt-2">Where your class gets stuck, and when.</p>
     </div>
   );
 
@@ -78,7 +81,7 @@ export function AnalyticsView() {
         {header}
         <div className="grid gap-4 lg:grid-cols-2">
           {Array.from({ length: 4 }, (_, i) => (
-            <Skeleton key={i} className="h-80 rounded-xl" />
+            <Skeleton key={i} className="h-80 rounded-3xl" />
           ))}
         </div>
       </div>
@@ -90,13 +93,13 @@ export function AnalyticsView() {
       <div>
         {header}
         <EmptyState
-          icon={BarChart3Icon}
+          mood="sleepy"
           title="No data yet"
           description="Run a session and let students ask a few doubts — charts will appear here."
           action={
             <Button asChild>
               <Link href="/teacher/new">
-                <PlusIcon /> New session
+                <PlusIcon weight="bold" /> New session
               </Link>
             </Button>
           }
@@ -119,17 +122,24 @@ export function AnalyticsView() {
     <div>
       {header}
 
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {[
-          { label: "Total doubts", value: data.status.total },
-          { label: "Answered", value: `${answeredPct}%` },
-          { label: "Still open", value: data.status.open },
-          { label: "Peak hour", value: peak.count ? hourLabel(peak.hour) : "—" },
-        ].map((s) => (
-          <Card key={s.label} className="gap-1 p-4">
-            <span className="text-muted-foreground text-sm">{s.label}</span>
-            <span className="text-3xl font-semibold tabular-nums">{s.value}</span>
-          </Card>
+          { label: "Total doubts", value: data.status.total, icon: ChartBarIcon, cls: "bg-card" },
+          { label: "Answered", value: answeredPct, suffix: "%", icon: SealCheckIcon, cls: "bg-lime text-lime-foreground border-transparent" },
+          { label: "Still open", value: data.status.open, icon: FireIcon, cls: "bg-card" },
+          { label: "Peak hour", text: peak.count ? hourLabel(peak.hour) : "—", icon: ClockIcon, cls: "bg-card" },
+        ].map((t) => (
+          <div key={t.label} className={`shadow-soft flex flex-col gap-5 rounded-3xl border p-5 ${t.cls}`}>
+            <div className="flex items-center justify-between text-sm font-semibold opacity-75">
+              {t.label}
+              <t.icon weight="duotone" className="size-5" />
+            </div>
+            {"text" in t ? (
+              <span className="font-display text-4xl leading-none font-extrabold">{t.text}</span>
+            ) : (
+              <NumberFlow value={t.value ?? 0} suffix={t.suffix} className="font-display text-4xl leading-none font-extrabold" />
+            )}
+          </div>
         ))}
       </div>
 
@@ -225,7 +235,7 @@ export function AnalyticsView() {
               </ResponsiveContainer>
               <div className="pointer-events-none absolute inset-0 grid place-items-center text-center">
                 <div>
-                  <div className="text-3xl font-semibold tabular-nums">{answeredPct}%</div>
+                  <div className="font-display text-4xl font-extrabold tabular-nums">{answeredPct}%</div>
                   <div className="text-muted-foreground text-xs">answered</div>
                 </div>
               </div>
@@ -233,7 +243,7 @@ export function AnalyticsView() {
             <ul className="mt-4 flex justify-center gap-6 text-sm">
               {donut.map((d) => (
                 <li key={d.name} className="flex items-center gap-2">
-                  <span className="size-2.5 rounded-sm" style={{ background: d.color }} />
+                  <span className="size-3 rounded-full" style={{ background: d.color }} />
                   {d.name}
                   <span className="text-muted-foreground tabular-nums">{d.value}</span>
                 </li>
@@ -309,7 +319,7 @@ export function AnalyticsView() {
                       <div className="text-muted-foreground flex items-center gap-2 text-xs">
                         {s.subject}
                         {s.isActive && (
-                          <Badge variant="success" className="h-4 px-1.5 text-[10px]">
+                          <Badge variant="success" className="h-4 px-1.5 text-[10px] font-bold uppercase">
                             Live
                           </Badge>
                         )}
@@ -322,7 +332,7 @@ export function AnalyticsView() {
                     <td className="px-3 py-3 text-right tabular-nums">{s.upvotes}</td>
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="bg-muted h-1.5 flex-1 overflow-hidden rounded-full">
+                        <div className="bg-muted h-2 flex-1 overflow-hidden rounded-full">
                           <div className="h-full rounded-full" style={{ width: `${s.answeredPct}%`, background: c.s1 }} />
                         </div>
                         <span className="w-10 text-right tabular-nums">{s.total ? `${s.answeredPct}%` : "—"}</span>

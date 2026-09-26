@@ -2,8 +2,10 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { ArrowRightIcon, Loader2Icon, RadioIcon } from "lucide-react";
+import { ArrowRightIcon, CircleNotchIcon, LockKeyIcon } from "@phosphor-icons/react";
 
+import { Blobby } from "@/components/art/blobby";
+import { Sparkle } from "@/components/art/doodles";
 import { OtpInput } from "@/components/otp-input";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api-client";
@@ -33,15 +35,21 @@ export function JoinForm() {
   }
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col items-center py-8 text-center sm:py-16">
-      <div className="bg-primary/10 text-primary mb-6 grid size-14 place-items-center rounded-2xl">
-        <RadioIcon className="size-7" />
+    <div className="relative mx-auto flex max-w-xl flex-col items-center py-6 text-center sm:py-12">
+      <div className="relative">
+        <Blobby mood={error ? "shocked" : pending ? "happy" : "curious"} className="text-foreground size-32 animate-float" />
+        <Sparkle className="text-lime absolute -top-1 -left-6 size-7" />
+        <Sparkle className="text-bubblegum absolute top-10 -right-8 size-5" />
       </div>
-      <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Join a live session</h1>
-      <p className="text-muted-foreground mt-2">Enter the 6-digit code your teacher is showing.</p>
+      <h1 className="mt-6 text-4xl leading-[1.05] font-extrabold sm:text-6xl">
+        got a <span className="font-serif-i text-primary text-5xl font-normal sm:text-7xl">code?</span>
+      </h1>
+      <p className="text-muted-foreground mt-3 text-base sm:text-lg">
+        Punch in the 6 digits on your teacher&apos;s screen.
+      </p>
 
       <form
-        className="mt-10 flex w-full flex-col items-center gap-6"
+        className="mt-10 flex w-full flex-col items-center gap-5"
         onSubmit={(e) => {
           e.preventDefault();
           join();
@@ -57,13 +65,17 @@ export function JoinForm() {
           disabled={pending}
           invalid={!!error}
         />
-        <p role="alert" className="text-destructive min-h-5 text-sm font-medium">
+        <p role="alert" className="text-destructive min-h-5 text-sm font-semibold">
           {error}
         </p>
         <Button type="submit" size="lg" className="w-full max-w-xs" disabled={code.length !== 6 || pending}>
-          {pending ? <Loader2Icon className="animate-spin" /> : <ArrowRightIcon />}
-          Join session
+          {pending ? <CircleNotchIcon weight="bold" className="animate-spin" /> : null}
+          Let me in
+          {!pending && <ArrowRightIcon weight="bold" />}
         </Button>
+        <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
+          <LockKeyIcon weight="duotone" className="size-4" /> Doubts are anonymous by default
+        </p>
       </form>
     </div>
   );
