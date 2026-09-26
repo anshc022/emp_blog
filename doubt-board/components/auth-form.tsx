@@ -48,7 +48,8 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     setError(null);
     try {
       const { user } = await api<{ user: AuthUser }>(`/api/auth/${mode}`, { method: "POST", body });
-      toast.success(mode === "register" ? `Welcome, ${user.name.split(" ")[0]}!` : `Welcome back, ${user.name.split(" ")[0]}!`);
+      const first = user.name.replace(/^(prof|dr|mr|ms|mrs)\.?\s+/i, "").split(" ")[0];
+      toast.success(mode === "register" ? `Welcome, ${first}!` : `Welcome back, ${first}!`);
       router.replace(destination(user.role, params.get("next")));
       router.refresh();
     } catch (err) {
