@@ -2,6 +2,7 @@ import "server-only";
 import Database from "better-sqlite3";
 import fs from "node:fs";
 import path from "node:path";
+import type { GivenAnswer, GivenRating } from "./questions";
 
 export type Role = "admin" | "employee";
 
@@ -53,8 +54,13 @@ function open() {
       author_id    INTEGER NOT NULL REFERENCES users(id),
       recipient_id INTEGER REFERENCES users(id),
       category     TEXT NOT NULL,
+      -- Every answer as plain text, so anything that reads only this column still has the note.
       message      TEXT NOT NULL,
-      created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+      -- JSON arrays of GivenRating and GivenAnswer (src/lib/questions.ts). NULL on notes written
+      -- before the composer asked questions: those are just the message.
+      ratings      TEXT,
+      answers      TEXT
     );
 
     CREATE TABLE IF NOT EXISTS stars (
@@ -76,6 +82,14 @@ function open() {
     throw new Error(
       `${dbPath} predates TeamDesk sign-in. Point DATABASE_PATH at a fresh file, or migrate it.`,
     );
+  }
+
+  // Notes from before the composer asked questions have no ratings or answers columns.
+  const feedbackColumns = new Set(
+    (db.prepare("PRAGMA table_info(feedback)").all() as { name: string }[]).map((c) => c.name),
+  );
+  for (const column of ["ratings", "answers"]) {
+    if (!feedbackColumns.has(column)) db.exec(`ALTER TABLE feedback ADD COLUMN ${column} TEXT`);
   }
 
   return db;
@@ -181,21 +195,23 @@ export function listActiveColleagues(excludeId: number) {
 /* queries below expose who wrote what.                                */
 /* ------------------------------------------------------------------ */
 
-export type AnonymousFeedback = {
+/** What every reader gets of a note's content. */
+type NoteBody = {
   id: number;
   category: Category;
   message: string;
   created_at: string;
+  ratings: GivenRating[];
+  answers: GivenAnswer[];
+};
+
+export type AnonymousFeedback = NoteBody & {
   to_everyone: number;
   star_count: number;
   starred: number;
 };
 
-export type SentFeedback = {
-  id: number;
-  category: Category;
-  message: string;
-  created_at: string;
+export type SentFeedback = NoteBody & {
   recipient_name: string | null;
   star_count: number;
 };
@@ -213,10 +229,39 @@ export function createFeedback(input: {
   recipientId: number | null;
   category: Category;
   message: string;
+  ratings: GivenRating[];
+  answers: GivenAnswer[];
 }) {
   db.prepare(
-    "INSERT INTO feedback (author_id, recipient_id, category, message) VALUES (?, ?, ?, ?)",
-  ).run(input.authorId, input.recipientId, input.category, input.message);
+    `INSERT INTO feedback (author_id, recipient_id, category, message, ratings, answers)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+  ).run(
+    input.authorId,
+    input.recipientId,
+    input.category,
+    input.message,
+    input.ratings.length ? JSON.stringify(input.ratings) : null,
+    input.answers.length ? JSON.stringify(input.answers) : null,
+  );
+}
+
+const NOTE_COLUMNS = "f.id, f.category, f.message, f.created_at, f.ratings, f.answers";
+
+type Stored<T> = Omit<T, "ratings" | "answers"> & { ratings: string | null; answers: string | null };
+
+function list<T>(raw: string | null): T[] {
+  if (!raw) return [];
+  try {
+    const value = JSON.parse(raw);
+    return Array.isArray(value) ? value : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Unpack the JSON columns of a note row. */
+function parsed<T extends NoteBody>(row: Stored<T>): T {
+  return { ...row, ratings: list<GivenRating>(row.ratings), answers: list<GivenAnswer>(row.answers) } as T;
 }
 
 export type InboxView = "all" | "mine" | "company";
@@ -235,14 +280,15 @@ export function listInbox(userId: number, view: InboxView = "all", sort: InboxSo
   const order = sort === "top" ? "star_count DESC, f.created_at DESC" : "f.created_at DESC, f.id DESC";
   return db
     .prepare(
-      `SELECT f.id, f.category, f.message, f.created_at, (f.recipient_id IS NULL) AS to_everyone,
+      `SELECT ${NOTE_COLUMNS}, (f.recipient_id IS NULL) AS to_everyone,
               ${STAR_COUNT} AS star_count,
               EXISTS (SELECT 1 FROM stars s WHERE s.feedback_id = f.id AND s.user_id = @user) AS starred
          FROM feedback f
         WHERE ${scope} AND f.author_id != @user
         ORDER BY ${order}`,
     )
-    .all({ user: userId }) as AnonymousFeedback[];
+    .all({ user: userId })
+    .map((row) => parsed(row as Stored<AnonymousFeedback>));
 }
 
 export function countInbox(userId: number) {
@@ -277,14 +323,15 @@ export function toggleStar(userId: number, feedbackId: number) {
 export function listSent(userId: number) {
   return db
     .prepare(
-      `SELECT f.id, f.category, f.message, f.created_at, r.name AS recipient_name,
+      `SELECT ${NOTE_COLUMNS}, r.name AS recipient_name,
               ${STAR_COUNT} AS star_count
          FROM feedback f
          LEFT JOIN users r ON r.id = f.recipient_id
         WHERE f.author_id = ?
         ORDER BY f.created_at DESC, f.id DESC`,
     )
-    .all(userId) as SentFeedback[];
+    .all(userId)
+    .map((row) => parsed(row as Stored<SentFeedback>));
 }
 
 export function listAllFeedback(
@@ -305,7 +352,7 @@ export function listAllFeedback(
   }
   return db
     .prepare(
-      `SELECT f.id, f.category, f.message, f.created_at, f.author_id, f.recipient_id,
+      `SELECT ${NOTE_COLUMNS}, f.author_id, f.recipient_id,
               a.name AS author_name, a.email AS author_email, r.name AS recipient_name,
               ${STAR_COUNT} AS star_count, ${STARRED_BY} AS starred
          FROM feedback f
@@ -314,7 +361,8 @@ export function listAllFeedback(
         ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
         ORDER BY ${filter.sort === "top" ? "star_count DESC, f.created_at DESC" : "f.created_at DESC, f.id DESC"}`,
     )
-    .all(...params) as AdminFeedback[];
+    .all(...params)
+    .map((row) => parsed(row as Stored<AdminFeedback>));
 }
 
 export function getStats() {

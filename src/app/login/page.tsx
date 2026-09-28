@@ -19,7 +19,7 @@ export default async function LoginPage() {
   return (
     <main className="mx-auto grid min-h-dvh max-w-5xl items-center gap-16 px-6 py-12 lg:grid-cols-2">
       <section>
-        <Logo size={26} />
+        <Logo size={26} byline />
         <h1 className="mt-10 text-[44px] leading-[1.02] font-semibold tracking-[-0.045em] sm:text-[56px]">
           say the thing.
           <br />

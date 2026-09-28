@@ -22,6 +22,8 @@ export async function GET(request: NextRequest) {
       id: f.id,
       category: f.category,
       message: f.message,
+      ratings: f.ratings, // [{id, label, value 1-5}], possibly empty
+      answers: f.answers, // [{id, label, text}]; empty on notes from before the questions
       created_at: isoUtc(f.created_at),
       author_id: f.author_id,
       author_name: f.author_name,

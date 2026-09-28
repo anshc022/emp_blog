@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
+import type { GivenAnswer, GivenRating } from "@/lib/questions";
 import { CategoryTag } from "./category";
+import { AnswerList, RatingList } from "./ratings";
 import { StarIcon } from "./star-button";
 
 export function timeAgo(sqlDate: string) {
@@ -17,6 +19,8 @@ export function timeAgo(sqlDate: string) {
 export function FeedbackNote({
   category,
   message,
+  ratings = [],
+  answers = [],
   createdAt,
   avatar,
   from,
@@ -26,6 +30,9 @@ export function FeedbackNote({
 }: {
   category: string;
   message: string;
+  ratings?: GivenRating[];
+  /** Notes written before the composer asked questions have none; they show `message`. */
+  answers?: GivenAnswer[];
   createdAt: string;
   avatar: ReactNode;
   from: ReactNode;
@@ -48,7 +55,12 @@ export function FeedbackNote({
             <CategoryTag category={category} />
           </span>
         </header>
-        <p className="mt-1.5 text-[16px] leading-relaxed whitespace-pre-wrap">{message}</p>
+        {answers.length ? (
+          <AnswerList answers={answers} />
+        ) : (
+          <p className="mt-1.5 text-[16px] leading-relaxed whitespace-pre-wrap">{message}</p>
+        )}
+        <RatingList ratings={ratings} />
         {footer && <footer className="mt-3 flex flex-wrap items-center gap-3">{footer}</footer>}
       </div>
     </article>

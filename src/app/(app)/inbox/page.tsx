@@ -68,6 +68,8 @@ export default async function InboxPage(props: PageProps<"/inbox">) {
               index={i}
               category={f.category}
               message={f.message}
+              ratings={f.ratings}
+              answers={f.answers}
               createdAt={f.created_at}
               avatar={<AnonAvatar seed={f.id} />}
               from={persona(f.id).name}

@@ -20,11 +20,11 @@ export default async function SentPage() {
           items.length > 0 && (
             <div className="flex gap-6 text-right">
               <div>
-                <div className="text-2xl font-semibold tabular-nums">{items.length}</div>
+                <div className="font-display text-2xl font-semibold tabular-nums">{items.length}</div>
                 <div className="meta">notes</div>
               </div>
               <div>
-                <div className="text-2xl font-semibold tabular-nums">{stars}</div>
+                <div className="font-display text-2xl font-semibold tabular-nums">{stars}</div>
                 <div className="meta">stars farmed</div>
               </div>
             </div>
@@ -48,6 +48,8 @@ export default async function SentPage() {
               index={i}
               category={f.category}
               message={f.message}
+              ratings={f.ratings}
+              answers={f.answers}
               createdAt={f.created_at}
               avatar={
                 f.recipient_name ? (

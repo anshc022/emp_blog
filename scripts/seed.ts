@@ -3,7 +3,8 @@
 //
 // Accounts live in TeamDesk, so these people exist only to have feedback addressed to them — none of
 // them can sign in. To sign in locally, point TEAMDESK_API_URL at a TeamDesk and use a real account.
-import { createFeedback, db, getUserByTeamDeskId, syncDirectory, toggleStar } from "../src/lib/db";
+import { type Category, createFeedback, db, getUserByTeamDeskId, syncDirectory, toggleStar } from "../src/lib/db";
+import { PROMPTS, RATINGS } from "../src/lib/questions";
 
 const people = [
   ["demo-ankita", "Ankita Sharma"],
@@ -22,30 +23,46 @@ const emailToDemo: Record<string, string> = {
 };
 const id = (email: string) => getUserByTeamDeskId(emailToDemo[email])!.id;
 const { count } = db.prepare("SELECT COUNT(*) AS count FROM feedback").get() as { count: number };
+
+/** A note written the way the composer writes one. */
+function note(
+  author: string,
+  recipient: string | null,
+  category: Category,
+  stars: Record<string, number>,
+  words: Record<string, string>,
+) {
+  const audience = recipient ? "person" : "company";
+  const answers = PROMPTS[audience]
+    .filter((p) => words[p.id])
+    .map((p) => ({ id: p.id, label: p.label, text: words[p.id] }));
+  createFeedback({
+    authorId: id(author),
+    recipientId: recipient ? id(recipient) : null,
+    category,
+    message: answers.map((a) => `${a.label}: ${a.text}`).join("\n\n"),
+    ratings: RATINGS[audience]
+      .filter((r) => stars[r.id])
+      .map((r) => ({ id: r.id, label: r.label, value: stars[r.id] })),
+    answers,
+  });
+}
+
 if (count === 0) {
-  createFeedback({
-    authorId: id("ankita@company.com"),
-    recipientId: null,
-    category: "Suggestion",
-    message: "can we move the weekly sync to tuesday mornings? mondays are already chaos 😵‍💫",
+  note("ankita@company.com", null, "Suggestion", { clarity: 4, workload: 2, communication: 3, tools: 3 }, {
+    working: "Standups are short and actually useful now.",
+    change: "Move the weekly sync to Tuesday mornings. Mondays are already chaos 😵‍💫",
   });
-  createFeedback({
-    authorId: id("rahul@company.com"),
-    recipientId: id("ankita@company.com"),
-    category: "Appreciation",
-    message: "the new onboarding screens are actually so clean. customers noticed immediately. W 🙌",
+  note("rahul@company.com", "ankita@company.com", "Appreciation", { collaboration: 5, quality: 5, helpfulness: 4 }, {
+    keep: "The new onboarding screens are so clean. Customers noticed immediately.",
+    better: "Share the Figma a day earlier so backend can shape the API around it.",
   });
-  createFeedback({
-    authorId: id("priya@company.com"),
-    recipientId: id("rahul@company.com"),
-    category: "Concern",
-    message: "release notes keep landing after launch, so marketing is always playing catch-up. can we get them a few days early? 🙏",
+  note("priya@company.com", "rahul@company.com", "Concern", { communication: 2, reliability: 3, quality: 4 }, {
+    keep: "Your fixes are solid, nothing comes back.",
+    better: "Release notes keep landing after launch, so marketing is always catching up. Could they come a few days early? 🙏",
   });
-  createFeedback({
-    authorId: id("arjun@company.com"),
-    recipientId: null,
-    category: "Appreciation",
-    message: "shout-out to whoever restocked the good coffee. mornings are healed ☕✨",
+  note("arjun@company.com", null, "Appreciation", { recognition: 5, growth: 4 }, {
+    working: "Whoever restocked the good coffee: mornings are healed ☕",
   });
 
   // A few stars on the company-wide notes.

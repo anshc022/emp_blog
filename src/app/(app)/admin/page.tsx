@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Trash2 } from "lucide-react";
 import { PersonAvatar } from "@/components/avatar";
+import { RatingAverages } from "@/components/ratings";
 import { EmptyState, FeedbackNote, PageHeader } from "@/components/feedback-note";
 import { persona } from "@/components/persona";
 import { Segmented } from "@/components/segmented";
@@ -48,7 +49,7 @@ export default async function AdminFeedbackPage(props: PageProps<"/admin">) {
       <div className="mb-8 grid grid-cols-4 border-y border-line">
         {numbers.map(([value, label], i) => (
           <div key={label} className={`py-4 ${i ? "border-l border-line pl-4" : ""}`}>
-            <div className="text-2xl font-semibold tabular-nums">{value}</div>
+            <div className="font-display text-2xl font-semibold tabular-nums">{value}</div>
             <div className="meta">{label}</div>
           </div>
         ))}
@@ -75,6 +76,8 @@ export default async function AdminFeedbackPage(props: PageProps<"/admin">) {
         {filtered && <Link href="/admin" data-sound="close" className="btn-ghost !py-2.5">clear</Link>}
       </form>
 
+      <RatingAverages notes={items} />
+
       <div className="mb-2 flex items-center justify-between border-b border-line">
         <span className="meta">{items.length} {items.length === 1 ? "note" : "notes"}</span>
         <Segmented value={sort} hrefFor={href} options={[{ value: "new", label: "new" }, { value: "top", label: "top" }]} />
@@ -89,6 +92,8 @@ export default async function AdminFeedbackPage(props: PageProps<"/admin">) {
             index={i}
             category={f.category}
             message={f.message}
+            ratings={f.ratings}
+            answers={f.answers}
             createdAt={f.created_at}
             avatar={<PersonAvatar name={f.author_name} />}
             from={
