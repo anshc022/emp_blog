@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Eye, Inbox, PenLine, Send, Users, type LucideIcon } from "lucide-react";
+import { Eye, Inbox, PenLine, Send, type LucideIcon } from "lucide-react";
 import { PersonAvatar } from "./avatar";
 import { Logo } from "./brand";
 import { MuteToggle } from "./sound";
 
-const ICONS: Record<string, LucideIcon> = { inbox: Inbox, sent: Send, admin: Eye, people: Users };
+const ICONS: Record<string, LucideIcon> = { inbox: Inbox, sent: Send, admin: Eye };
 
 export type NavItem = { href: string; label: string; icon: keyof typeof ICONS; badge?: number };
 

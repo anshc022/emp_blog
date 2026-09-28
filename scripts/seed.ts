@@ -1,23 +1,26 @@
-// Adds demo employees and sample feedback so you can try the app locally.
+// Adds demo colleagues and sample feedback so you can look at the app locally.
 // Run with: npm run seed
-import bcrypt from "bcryptjs";
-import { createFeedback, db, getUserWithHash, toggleStar } from "../src/lib/db";
+//
+// Accounts live in TeamDesk, so these people exist only to have feedback addressed to them — none of
+// them can sign in. To sign in locally, point TEAMDESK_API_URL at a TeamDesk and use a real account.
+import { createFeedback, db, getUserByTeamDeskId, syncDirectory, toggleStar } from "../src/lib/db";
 
-const password = bcrypt.hashSync("password123", 10);
 const people = [
-  ["Ankita Sharma", "ankita@company.com", "Design"],
-  ["Rahul Verma", "rahul@company.com", "Engineering"],
-  ["Priya Nair", "priya@company.com", "Marketing"],
-  ["Arjun Mehta", "arjun@company.com", "Sales"],
+  ["demo-ankita", "Ankita Sharma"],
+  ["demo-rahul", "Rahul Verma"],
+  ["demo-priya", "Priya Nair"],
+  ["demo-arjun", "Arjun Mehta"],
 ];
 
-for (const [name, email, department] of people) {
-  db.prepare(
-    "INSERT OR IGNORE INTO users (name, email, password_hash, department) VALUES (?, ?, ?, ?)",
-  ).run(name, email, password, department);
-}
+syncDirectory(people.map(([id, name]) => ({ id, name, global_role: "MEMBER", is_active: true })));
 
-const id = (email: string) => getUserWithHash(email)!.id;
+const emailToDemo: Record<string, string> = {
+  "ankita@company.com": "demo-ankita",
+  "rahul@company.com": "demo-rahul",
+  "priya@company.com": "demo-priya",
+  "arjun@company.com": "demo-arjun",
+};
+const id = (email: string) => getUserByTeamDeskId(emailToDemo[email])!.id;
 const { count } = db.prepare("SELECT COUNT(*) AS count FROM feedback").get() as { count: number };
 if (count === 0) {
   createFeedback({
@@ -55,4 +58,4 @@ if (count === 0) {
   for (const email of ["ankita@company.com", "rahul@company.com"]) toggleStar(id(email), coffee);
 }
 
-console.log(`Seeded ${people.length} employees (password: password123).`);
+console.log(`Seeded ${people.length} demo colleagues (they cannot sign in; accounts live in TeamDesk).`);

@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/session";
 
 export default async function GivePage() {
   const user = await requireUser();
-  const colleagues = listActiveColleagues(user.id).map(({ id, name, department }) => ({ id, name, department }));
+  const colleagues = listActiveColleagues(user.id).map(({ id, name }) => ({ id, name }));
 
   return (
     <>

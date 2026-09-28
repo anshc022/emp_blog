@@ -44,3 +44,7 @@ next-env.d.ts
 /data/
 
 !.env.example
+
+# on the server: npm cache in the service home, and the throwaway database a build opens
+/.npm/
+/.build.db*
