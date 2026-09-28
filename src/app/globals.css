@@ -1,43 +1,53 @@
 @import "tailwindcss";
 
 /* ------------------------------------------------------------------ */
-/* spill. — minimal black & white. Colour appears only in tiny fills:  */
-/* category dots, the starred star, and the unread badge.              */
+/* spill., in NextQom's colours (nextqom.com): a cool blue-grey ground, */
+/* navy ink, and NextQom blue for the one thing to press. Other colour  */
+/* stays in small fills: category dots, stars, the unread badge.        */
 /* ------------------------------------------------------------------ */
 :root {
-  --bg: #ffffff;
-  --text: #0a0a0a;
-  --muted: #6b6b6b;
-  --faint: #a3a3a3;
-  --line: #ebebeb;
-  --subtle: #f6f6f6;
-  --inverse: #0a0a0a;
+  --bg: #f5f7fb;
+  --surface: #ffffff;
+  --text: #0b1220;
+  --muted: #5b6b84;
+  --faint: #8391a7;
+  --line: #e4e9f2;
+  --subtle: #eef2f8;
+  --inverse: #0b1220;
   --on-inverse: #ffffff;
+
+  --accent: #2563eb;
+  --accent-ink: #2563eb; /* accent as text or an icon on the ground */
+  --on-accent: #ffffff;
 
   --c-props: #16a34a;
   --c-idea: #eab308;
   --c-flag: #ef4444;
   --c-random: #8b5cf6;
-  --star: #facc15;
+  --star: #f5b301;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0a0a0a;
-    --text: #f5f5f5;
-    --muted: #a1a1a1;
-    --faint: #5c5c5c;
-    --line: #232323;
-    --subtle: #151515;
-    --inverse: #f5f5f5;
-    --on-inverse: #0a0a0a;
+    --bg: #070b12;
+    --surface: #0c1322;
+    --text: #eaf0f9;
+    --muted: #93a3bc;
+    --faint: #6b7a93;
+    --line: #1b2433;
+    --subtle: #0e1626;
+    --inverse: #eaf0f9;
+    --on-inverse: #070b12;
+    --accent-ink: #4f8df9;
+    --star: #facc15;
     color-scheme: dark;
   }
 }
 
 @theme inline {
   --color-bg: var(--bg);
+  --color-surface: var(--surface);
   --color-text: var(--text);
   --color-muted: var(--muted);
   --color-faint: var(--faint);
@@ -45,10 +55,15 @@
   --color-subtle: var(--subtle);
   --color-inverse: var(--inverse);
   --color-on-inverse: var(--on-inverse);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-on-accent: var(--on-accent);
   --color-star: var(--star);
 
-  --font-sans: "Geist Variable", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Geist Mono Variable", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", ui-monospace, monospace;
+  /* The faces nextqom.com uses: Outfit for headings, Inter for reading, Space Mono for labels. */
+  --font-display: var(--font-outfit), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-space-mono), "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", ui-monospace, monospace;
 }
 
 body {
@@ -58,25 +73,33 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* In the base layer, so a utility class on a heading (font-mono, say) still wins. */
+@layer base {
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    text-wrap: balance;
+  }
+}
+
 ::selection {
-  background: var(--inverse);
-  color: var(--on-inverse);
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 @utility btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-full bg-inverse px-4 py-2 text-sm font-medium text-on-inverse transition active:scale-[0.97] hover:opacity-85 disabled:pointer-events-none disabled:opacity-30;
+  @apply inline-flex items-center justify-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-medium text-on-accent shadow-sm shadow-accent/20 transition active:scale-[0.97] hover:brightness-110 focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg focus-visible:outline-none disabled:pointer-events-none disabled:opacity-35 disabled:shadow-none;
 }
 @utility btn-ghost {
-  @apply inline-flex items-center justify-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-[13px] font-medium text-muted transition hover:border-text/30 hover:text-text active:scale-[0.97] disabled:opacity-40;
+  @apply inline-flex items-center justify-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-[13px] font-medium text-muted transition hover:border-text/30 hover:text-text active:scale-[0.97] disabled:opacity-40;
 }
 @utility field {
-  @apply w-full rounded-xl border border-line bg-bg px-3.5 py-2.5 text-[15px] outline-none transition placeholder:text-faint focus:border-text;
+  @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-[15px] outline-none transition placeholder:text-faint focus:border-accent focus:ring-3 focus:ring-accent/15;
 }
 @utility field-label {
   @apply mb-1.5 block text-[13px] font-medium text-muted;
 }
 @utility meta {
-  @apply font-mono text-xs text-faint;
+  @apply font-mono text-[11px] text-faint;
 }
 
 /* ------------------------------------------------------------------ */

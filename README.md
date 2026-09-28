@@ -1,8 +1,10 @@
 # spill. ☕
 
-*spill the tea. anonymously.* An internal, **anonymous** feedback app for the whole company, Minimal black & white design with small pops of colour, hand-built 3D SVG objects (teacup, envelope, star, shades) that float and tilt toward the cursor, lucide line icons, and a funny voice.
+*spill the tea. anonymously.* NextQom's internal, **anonymous** feedback app. It wears NextQom's brand (the NQ mark, nextqom.com's blue and navy, Outfit / Inter / Space Mono), with hand-built 3D SVG objects (teacup, envelope, star, shades) that float and tilt toward the cursor, lucide line icons, and a funny voice.
 
 - Any employee can send feedback to **one colleague** or to **everyone**.
+- The form asks, rather than handing over a blank box: optional **1–5 star ratings** and a few **written questions**, which
+  depend on who the note is for. At least one question must be answered; stars alone are not accepted.
 - Recipients **never** see who wrote it. Their inbox only shows "Anonymous".
 - Anyone can **★ star** the notes they can see; sort by **Top** to see what resonates most.
 - **Admins** — anyone who is an ADMIN or SUPER_ADMIN in TeamDesk — see everything, including who wrote each message
@@ -17,21 +19,49 @@
 | Employee | Read their inbox (filter: All / For you / Company, sort: Newest / Top), star notes, write feedback, see what they sent and how many stars it got |
 | Admin | Everything above, plus see **all** feedback with author names, filter by sender/recipient, sort by stars, delete messages. Also available inside the TeamDesk desktop app. |
 
+### What the form asks
+
+Written to one person (`{name}` is their first name):
+
+| Stars (each optional) | Questions |
+| --- | --- |
+| Collaboration — {name} is easy to work with | What should {name} keep doing? |
+| Communication — {name} keeps people in the loop | What would make working with {name} even better? |
+| Reliability — {name} delivers what they commit to, on time | A moment that stuck with you *(optional)* |
+| Quality of work — {name}'s work is solid and well thought through | |
+| Helpfulness — {name} helps others when they're stuck | |
+
+Written to everyone:
+
+| Stars (each optional) | Questions |
+| --- | --- |
+| Clarity — I know what's expected of me, and why | What's working well at NextQom right now? |
+| Workload — My workload is manageable | If you could change one thing, what would it be? |
+| Communication — I hear about decisions that affect me in time | Anything else leadership should hear? *(optional)* |
+| Tools & process — Our tools and process help more than they get in the way | |
+| Growth — I'm learning and growing here | |
+| Recognition — Good work gets noticed | |
+
+The questions live in `src/lib/questions.ts`. Each note stores its ratings and answers with their labels, so rewording a
+question later does not change what old notes say. Notes written before the form asked questions keep their plain text.
+Admins see the average of each rating across whatever they have filtered to, with notes to everyone and notes to people
+averaged apart.
+
 Feedback vibes: props, idea, red flag, random, each marked with a small coloured dot (stored as Appreciation / Suggestion / Concern / Other).
 
-UX details: confetti when you send, a live "vibe meter" while you type (it even notices ALL CAPS), ⌘/Ctrl+Enter to send, a star button that pops yellow, and dark mode.
+UX details: confetti when you send, a draft that survives a validation error, ⌘/Ctrl+Enter to send, a star button that pops yellow, and dark mode.
 
 Sound effects: every interaction has a tiny synthesized sound (no audio files, Web Audio API): taps, tabs, opening menus, picking a person or vibe, soft typing ticks, starring (sparkle) and un-starring, send (whoosh + chime), confetti party, errors, successes, a login chime, a goodbye jingle and a delete swoosh. There's a sound on/off toggle in the top bar, saved per browser. Sounds live in `src/lib/sound.ts`; any element can opt in with `data-sound="tap"`.
 
 ## Tech
 
-Next.js 16 (App Router, Server Actions) · Tailwind CSS 4 · Geist + Geist Mono (self-hosted) · SQLite (`better-sqlite3`) · signed-cookie sessions (`jose`).
+Next.js 16 (App Router, Server Actions) · Tailwind CSS 4 · Outfit, Inter and Space Mono via `next/font` (fetched at build, served from this app) · SQLite (`better-sqlite3`) · signed-cookie sessions (`jose`).
 
 Anonymity is enforced on the server: the employee-facing queries in `src/lib/db.ts` never select the author,
 so the name cannot reach an employee's browser. Only the admin pages, which are guarded by `requireAdmin()`, join the author.
 
 The UI follows the system light/dark setting and works on phones (bottom tab bar) as well as desktop (sidebar).
-To rename the app, change `APP_NAME` in `src/components/brand.tsx`. Category labels live in `src/components/category.tsx`, aliases in `src/components/persona.ts`.
+To rename the app, change `APP_NAME` in `src/components/brand.tsx`; the NQ mark is `public/nq-mark.png` and the icons are `src/app/icon.png` and `src/app/apple-icon.png`, all cut from nextqom.com's logo. Category labels live in `src/components/category.tsx`, aliases in `src/components/persona.ts`.
 
 ## Accounts live in TeamDesk
 
@@ -55,7 +85,8 @@ TeamDesk admins also get a **Feedback** page in the TeamDesk desktop app. It cal
 The routes it uses (`src/app/api/teamdesk/`) answer only when the key matches `TEAMDESK_APP_KEY` **and** the role is
 ADMIN or SUPER_ADMIN — otherwise they return 404, so the public site cannot be used to read names by forging headers.
 
-- `GET /api/teamdesk/feedback?sort=new|top&author=<id>&recipient=<id>|everyone` — totals, people, and every note with its author
+- `GET /api/teamdesk/feedback?sort=new|top&author=<id>&recipient=<id>|everyone` — totals, people, and every note with its author,
+  its `ratings` (`[{id, label, value}]`) and `answers` (`[{id, label, text}]`; empty for notes from before the questions)
 - `DELETE /api/teamdesk/feedback/<id>` — remove a note and its stars
 
 ## Getting started
@@ -78,7 +109,8 @@ npm run build && npm run test:e2e
 ```
 
 `scripts/e2e/run.mjs` starts a stand-in TeamDesk (`scripts/e2e/mock-teamdesk.mjs`) and the built app, then drives the
-real forms over HTTP: sign-in and its failures, anonymity in the inbox, admin visibility, the TeamDesk admin API and its
+real forms over HTTP: sign-in and its failures, upgrading a database from before the questions, which stars and answers
+are kept for each kind of note, anonymity in the inbox, admin visibility, the TeamDesk admin API and its
 key check, deactivation, session revocation, and rate limiting.
 
 ## Deploying

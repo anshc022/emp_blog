@@ -14,13 +14,13 @@ import {
   toggleStar as toggleStarRow,
   upsertSignedIn,
 } from "./db";
+import { MAX_ANSWER, PROMPTS, RATINGS, type GivenAnswer, type GivenRating } from "./questions";
 import { clearFailures, lockedFor, recordFailure } from "./rate-limit";
 import { createSession, deleteSession, requireAdmin, requireUser } from "./session";
 import { signInWithTeamDesk, TeamDeskUnavailable } from "./teamdesk";
 
 export type FormState = { error?: string; success?: string } | undefined;
 
-const MAX_MESSAGE = 2000;
 
 function text(form: FormData, key: string) {
   return String(form.get(key) ?? "").trim();
@@ -81,11 +81,8 @@ export async function sendFeedback(_: FormState, form: FormData): Promise<FormSt
   const user = await requireUser();
   const to = text(form, "recipient");
   const category = text(form, "category") as Category;
-  const message = text(form, "message");
 
   if (!CATEGORIES.includes(category)) return { error: "pick a vibe first" };
-  if (message.length < 5) return { error: "write at least a few words" };
-  if (message.length > MAX_MESSAGE) return { error: `ok novelist, keep it under ${MAX_MESSAGE} characters` };
 
   let recipientId: number | null = null;
   if (to !== "everyone") {
@@ -95,7 +92,29 @@ export async function sendFeedback(_: FormState, form: FormData): Promise<FormSt
     if (recipient.id === user.id) return { error: "you can't spill tea on yourself" };
   }
 
-  createFeedback({ authorId: user.id, recipientId, category, message });
+  // Only the questions asked of this audience are read; anything else in the form is ignored.
+  const audience = recipientId === null ? "company" : "person";
+  const ratings: GivenRating[] = [];
+  for (const r of RATINGS[audience]) {
+    const value = Number(text(form, `rating_${r.id}`));
+    if (Number.isInteger(value) && value >= 1 && value <= 5) ratings.push({ id: r.id, label: r.label, value });
+  }
+  const answers: GivenAnswer[] = [];
+  for (const p of PROMPTS[audience]) {
+    const answer = text(form, `answer_${p.id}`);
+    if (answer.length > MAX_ANSWER) return { error: `keep “${p.label.toLowerCase()}” under ${MAX_ANSWER} characters` };
+    if (answer) answers.push({ id: p.id, label: p.label, text: answer });
+  }
+  if (!answers.some((a) => a.text.length >= 5)) return { error: "answer at least one question in a few words" };
+
+  createFeedback({
+    authorId: user.id,
+    recipientId,
+    category,
+    message: answers.map((a) => `${a.label}: ${a.text}`).join("\n\n"),
+    ratings,
+    answers,
+  });
   revalidatePath("/", "layout");
   return { success: "tea spilled" };
 }

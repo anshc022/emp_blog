@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { Check, ChevronDown, EyeOff, Eye, Lock, Megaphone, Search, Send } from "lucide-react";
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { login, sendFeedback, type FormState } from "@/lib/actions";
+import { MAX_ANSWER, PROMPTS, RATINGS, STAR_WORDS, fill, firstName, type Audience } from "@/lib/questions";
 import { play } from "@/lib/sound";
 import { PersonAvatar } from "./avatar";
 import { CATEGORY_META, Dot } from "./category";
+import { StarShape } from "./ratings";
 import { TeaCup3D, Tilt } from "./three-d";
 
 function Status({ state }: { state: FormState }) {
@@ -79,10 +81,19 @@ export function LoginForm() {
 
 type Colleague = { id: number; name: string };
 
-function RecipientPicker({ colleagues }: { colleagues: Colleague[] }) {
+type Recipient = "everyone" | number;
+
+function RecipientPicker({
+  colleagues,
+  value,
+  onChange,
+}: {
+  colleagues: Colleague[];
+  value: Recipient;
+  onChange: (value: Recipient) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [value, setValue] = useState<"everyone" | number>("everyone");
   const box = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -97,9 +108,9 @@ function RecipientPicker({ colleagues }: { colleagues: Colleague[] }) {
   }, [colleagues, query]);
 
   const selected = value === "everyone" ? null : colleagues.find((c) => c.id === value);
-  const pick = (v: "everyone" | number) => {
+  const pick = (v: Recipient) => {
     play("select");
-    setValue(v);
+    onChange(v);
     setOpen(false);
     setQuery("");
   };
@@ -114,7 +125,7 @@ function RecipientPicker({ colleagues }: { colleagues: Colleague[] }) {
           setOpen((o) => !o);
         }}
         aria-expanded={open}
-        className="flex w-full items-center gap-3 rounded-xl border border-line px-3 py-2.5 text-left transition hover:border-text/30"
+        className="flex w-full items-center gap-3 rounded-xl border border-line bg-surface px-3 py-2.5 text-left transition hover:border-text/30"
       >
         {selected ? (
           <PersonAvatar name={selected.name} size={32} />
@@ -131,7 +142,7 @@ function RecipientPicker({ colleagues }: { colleagues: Colleague[] }) {
       </button>
 
       {open && (
-        <div className="fade-up absolute inset-x-0 top-full z-40 mt-2 overflow-hidden rounded-xl border border-line bg-bg shadow-xl shadow-black/5">
+        <div className="fade-up absolute inset-x-0 top-full z-40 mt-2 overflow-hidden rounded-xl border border-line bg-surface shadow-xl shadow-black/5">
           <div className="flex items-center gap-2 border-b border-line px-3.5">
           <Search size={16} className="text-faint" />
           <input
@@ -186,18 +197,6 @@ function Option({ active, onClick, children }: { active: boolean; onClick: () =>
   );
 }
 
-/** How the message is shaping up. */
-function vibe(length: number, shouting: boolean): string {
-  if (shouting) return "😤 caps lock is cruise control for cool. maybe chill?";
-  if (length === 0) return "🤐 cat got your tongue?";
-  if (length < 5) return "👀 keep going…";
-  if (length < 60) return "✍️ short and sweet";
-  if (length < 280) return "🔥 now we're talking";
-  if (length < 900) return "📝 detailed. love that";
-  if (length < 1800) return "📜 ok novelist";
-  return "🫠 almost at the limit";
-}
-
 const SUCCESS_LINES = [
   "tea spilled.",
   "sent. you're lowkey a legend.",
@@ -206,7 +205,7 @@ const SUCCESS_LINES = [
   "message yeeted anonymously.",
 ];
 
-const CONFETTI_COLORS = ["var(--text)", "var(--text)", "var(--text)", "var(--star)", "var(--c-flag)", "var(--c-props)"];
+const CONFETTI_COLORS = ["var(--accent)", "var(--accent)", "var(--text)", "var(--star)", "var(--c-flag)", "var(--c-props)"];
 
 function Confetti() {
   const [pieces] = useState(() =>
@@ -265,9 +264,78 @@ function SentScreen({ onAgain }: { onAgain: () => void }) {
   );
 }
 
+/** One statement, rated 1–5. Picking the chosen star again clears it: every rating is optional. */
+function StarRow({
+  name,
+  label,
+  statement,
+  value,
+  onChange,
+}: {
+  name: string;
+  label: string;
+  statement: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  const [hover, setHover] = useState(0);
+  const shown = hover || value;
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line py-3.5 last:border-0">
+      <div className="min-w-48 flex-1">
+        <div className="text-[15px] font-medium">{label}</div>
+        <div className="text-[13px] text-muted">{statement}</div>
+      </div>
+      <div className="flex items-center gap-3">
+        <div role="radiogroup" aria-label={statement} className="flex" onMouseLeave={() => setHover(0)}>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <label key={n} className="cursor-pointer p-[3px]" onMouseEnter={() => setHover(n)}>
+              <input
+                type="radio"
+                name={name}
+                value={n}
+                checked={value === n}
+                onChange={() => {
+                  play("star");
+                  onChange(n);
+                }}
+                onClick={() => {
+                  if (value !== n) return;
+                  play("unstar");
+                  onChange(0);
+                }}
+                aria-label={`${n} of 5, ${STAR_WORDS[n]}`}
+                className="peer sr-only"
+              />
+              <span
+                className={`block rounded-md transition peer-focus-visible:ring-2 peer-focus-visible:ring-accent/40 ${
+                  n <= shown ? "text-star" : "text-faint"
+                } ${hover === n ? "scale-110" : ""}`}
+              >
+                <StarShape filled={n <= shown} size={22} />
+              </span>
+            </label>
+          ))}
+        </div>
+        <span className={`w-[8.5rem] text-[13px] ${shown ? "text-text" : "text-faint"}`}>{STAR_WORDS[shown]}</span>
+      </div>
+    </div>
+  );
+}
+
+type Answers = Record<string, string>;
+type Stars = Record<string, number>;
+const EMPTY: Record<Audience, { answers: Answers; stars: Stars }> = {
+  person: { answers: {}, stars: {} },
+  company: { answers: {}, stars: {} },
+};
+
 export function Composer({ colleagues, categories }: { colleagues: Colleague[]; categories: readonly string[] }) {
   const [state, action, pending] = useActionState(sendFeedback, undefined);
-  const [text, setText] = useState("");
+  const [to, setTo] = useState<Recipient>("everyone");
+  // What has been written so far, per audience: switching from a person to everyone and back keeps
+  // both drafts, since the two ask different things.
+  const [draft, setDraft] = useState(EMPTY);
   // The success result the user has already dismissed with "write another".
   const [dismissed, setDismissed] = useState<FormState>(undefined);
   const formRef = useRef<HTMLFormElement>(null);
@@ -277,31 +345,50 @@ export function Composer({ colleagues, categories }: { colleagues: Colleague[]; 
       <SentScreen
         onAgain={() => {
           setDismissed(state);
-          setText("");
+          setDraft(EMPTY);
+          setTo("everyone");
         }}
       />
     );
   }
 
-  const max = 2000;
-  const letters = text.replace(/[^a-z]/gi, "");
-  const shouting = letters.length > 12 && letters === letters.toUpperCase();
+  const audience: Audience = to === "everyone" ? "company" : "person";
+  const person = to === "everyone" ? undefined : colleagues.find((c) => c.id === to);
+  const name = person ? firstName(person.name) : "";
+  const { answers, stars } = draft[audience];
+  const ratings = RATINGS[audience];
+  const prompts = PROMPTS[audience];
+  const rated = ratings.filter((r) => stars[r.id]).length;
+  const answered = prompts.filter((p) => (answers[p.id] ?? "").trim().length >= 5).length;
+
+  const set = (patch: { answers?: Answers; stars?: Stars }) =>
+    setDraft((d) => ({
+      ...d,
+      [audience]: { answers: { ...d[audience].answers, ...patch.answers }, stars: { ...d[audience].stars, ...patch.stars } },
+    }));
 
   return (
     <form
       ref={formRef}
       action={action}
-      onSubmit={() => play("send")}
-      onReset={() => setText("")}
-      className="space-y-7"
+      onSubmit={(e) => {
+        // Dispatch by hand: a form action resets the form when it finishes, and a draft someone
+        // spent five minutes on must survive "answer at least one question". `action` stays on
+        // the form for browsers without JavaScript.
+        e.preventDefault();
+        play("send");
+        const data = new FormData(e.currentTarget);
+        startTransition(() => action(data));
+      }}
+      className="space-y-9"
     >
       <section>
         <div className="field-label">to</div>
-        <RecipientPicker colleagues={colleagues} />
+        <RecipientPicker colleagues={colleagues} value={to} onChange={setTo} />
       </section>
 
       <section>
-        <div className="field-label">vibe</div>
+        <div className="field-label">what kind of note?</div>
         <div className="flex flex-wrap gap-2">
           {categories.map((c, i) => {
             const m = CATEGORY_META[c] ?? CATEGORY_META.Other;
@@ -315,7 +402,7 @@ export function Composer({ colleagues, categories }: { colleagues: Colleague[]; 
                   onChange={() => play("select")}
                   className="peer sr-only"
                 />
-                <span className="flex items-center gap-2 rounded-full border border-line px-3.5 py-1.5 text-sm text-muted transition peer-checked:border-text peer-checked:text-text peer-focus-visible:ring-2 peer-focus-visible:ring-text/20 hover:border-text/30">
+                <span className="flex items-center gap-2 rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm text-muted transition peer-checked:border-text peer-checked:text-text peer-focus-visible:ring-2 peer-focus-visible:ring-accent/40 hover:border-text/30">
                   <Dot color={m.color} />
                   {m.label}
                 </span>
@@ -326,37 +413,78 @@ export function Composer({ colleagues, categories }: { colleagues: Colleague[]; 
       </section>
 
       <section>
-        <div className="field-label">message</div>
-        <textarea
-          name="message"
-          maxLength={max}
-          required
-          rows={7}
-          value={text}
-          onChange={(e) => {
-            play("type");
-            setText(e.target.value);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) formRef.current?.requestSubmit();
-          }}
-          placeholder="be specific, be real, be kind. what happened, and what would make it better?"
-          className="field resize-none !py-3 !text-[16px] leading-relaxed"
-        />
-        <div className="mt-2 flex items-center justify-between gap-3 text-[13px]">
-          <span className={shouting ? "text-text" : "text-muted"}>{vibe(text.trim().length, shouting)}</span>
-          <span className="meta">
-            {text.length}/{max}
-          </span>
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="font-display text-[19px] font-semibold tracking-tight">
+            {person ? `How is it working with ${name}?` : "How does working here feel?"}
+          </h2>
+          <span className="meta shrink-0">{rated}/{ratings.length} rated</span>
+        </div>
+        <p className="mt-1 text-[13px] text-muted">
+          {person
+            ? "Rate only what you've seen yourself. Skip the rest."
+            : "Rate how it is for you, right now. Skip anything you're unsure about."}
+        </p>
+        <div className="mt-3 rounded-2xl border border-line bg-surface px-4">
+          {ratings.map((r) => (
+            <StarRow
+              key={r.id}
+              name={`rating_${r.id}`}
+              label={r.label}
+              statement={fill(r.statement, name)}
+              value={stars[r.id] ?? 0}
+              onChange={(v) => set({ stars: { [r.id]: v } })}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="font-display text-[19px] font-semibold tracking-tight">In your words</h2>
+          <span className="meta shrink-0">{answered}/{prompts.length} answered</span>
+        </div>
+        <p className="mt-1 text-[13px] text-muted">
+          Answer at least one. Be specific, be kind, and leave out details that would give you away.
+        </p>
+        <div className="mt-4 space-y-6">
+          {prompts.map((p) => {
+            const value = answers[p.id] ?? "";
+            return (
+              <label key={p.id} className="block">
+                <span className="flex items-baseline gap-2 text-[15px] font-medium">
+                  {fill(p.question, name)}
+                  {p.optional && <span className="meta">optional</span>}
+                </span>
+                <textarea
+                  name={`answer_${p.id}`}
+                  maxLength={MAX_ANSWER}
+                  rows={3}
+                  value={value}
+                  onChange={(e) => {
+                    play("type");
+                    set({ answers: { [p.id]: e.target.value } });
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) formRef.current?.requestSubmit();
+                  }}
+                  placeholder={p.hint}
+                  className="field mt-2 resize-y !py-3 !text-[16px] leading-relaxed"
+                />
+                {value.length > MAX_ANSWER * 0.8 && (
+                  <span className="meta mt-1 block text-right">{value.length}/{MAX_ANSWER}</span>
+                )}
+              </label>
+            );
+          })}
         </div>
       </section>
 
       <Status state={state?.error ? state : undefined} />
 
-      <div className="flex items-center gap-3 border-t border-line pt-5">
+      <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5">
         <span className="inline-flex items-center gap-1.5 text-[13px] text-muted" title="hidden from whoever you write to. admins can see who wrote each note."><Lock size={13} /> hidden from them · admins can see</span>
         <span className="meta hidden sm:inline">⌘↵ to send</span>
-        <button className="btn ml-auto" disabled={pending || text.trim().length < 5}>
+        <button className="btn ml-auto whitespace-nowrap" disabled={pending || answered === 0}>
           {pending ? "sending…" : <>send anonymously <Send size={14} /></>}
         </button>
       </div>

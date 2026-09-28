@@ -23,6 +23,29 @@ const start = (cmd, args, env) => {
 const stop = () => kids.forEach((k) => k.kill());
 process.on("exit", stop);
 
+// Start from the database as production had it before notes carried ratings and answers, with one
+// note written then, so the upgrade is tested on the shape it will actually meet.
+{
+  const old = new Database(DB);
+  old.exec(`
+    CREATE TABLE users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, teamdesk_id TEXT NOT NULL UNIQUE, name TEXT NOT NULL,
+      email TEXT UNIQUE COLLATE NOCASE, role TEXT NOT NULL DEFAULT 'employee' CHECK (role IN ('admin', 'employee')),
+      active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL DEFAULT (datetime('now')), last_login_at TEXT);
+    CREATE TABLE feedback (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, author_id INTEGER NOT NULL REFERENCES users(id),
+      recipient_id INTEGER REFERENCES users(id), category TEXT NOT NULL, message TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')));
+    CREATE TABLE stars (
+      user_id INTEGER NOT NULL REFERENCES users(id), feedback_id INTEGER NOT NULL REFERENCES feedback(id) ON DELETE CASCADE,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')), PRIMARY KEY (user_id, feedback_id));
+    INSERT INTO users (teamdesk_id, name, role) VALUES ('td-sam', 'Sam Super', 'admin');
+    INSERT INTO feedback (author_id, recipient_id, category, message, created_at)
+      VALUES (1, NULL, 'Other', 'an old note from before the questions', datetime('now', '-3 days'));
+  `);
+  old.close();
+}
+
 start("node", ["scripts/e2e/mock-teamdesk.mjs"], { PORT: String(MOCK) });
 start("npx", ["next", "start", "-p", String(APP), "-H", "127.0.0.1"], {
   TEAMDESK_API_URL: mock, TEAMDESK_APP_KEY: KEY, SESSION_SECRET: "e2e-secret-0123456789",
@@ -111,17 +134,53 @@ await check("colleagues come from TeamDesk — including people who never opened
 
 console.log("feedback and anonymity");
 const carolId = db().prepare("SELECT id FROM users WHERE teamdesk_id = 'td-carol'").get().id;
-await check("a member can send feedback to someone who has never signed in", async () => {
-  const r = await submit("/give", "message", { recipient: String(carolId), category: "Appreciation", message: "loved the release notes, carol" }, alice);
-  assert.doesNotMatch(r.text, /pick someone|pick a vibe/);
-  const r2 = await submit("/give", "message", { recipient: "everyone", category: "Suggestion", message: "friday demos should be shorter" }, alice);
-  assert.doesNotMatch(r2.text, /pick someone|pick a vibe/);
-  assert.equal(db().prepare("SELECT COUNT(*) c FROM feedback").get().c, 2);
+const count = () => db().prepare("SELECT COUNT(*) c FROM feedback").get().c;
+await check("the old database is upgraded in place and keeps its note", async () => {
+  const columns = db().prepare("PRAGMA table_info(feedback)").all().map((c) => c.name);
+  assert.ok(columns.includes("ratings") && columns.includes("answers"), columns.join());
+  assert.equal(count(), 1);
+});
+await check("stars and words are required the right way: stars alone are refused", async () => {
+  const r = await submit("/give", "recipient", { recipient: String(carolId), category: "Appreciation", rating_collaboration: "5" }, alice);
+  assert.match(r.text, /answer at least one question/);
+  assert.equal(count(), 1);
+});
+await check("a note to a person stores only the stars and answers that person's questions asked", async () => {
+  const r = await submit("/give", "recipient", {
+    recipient: String(carolId), category: "Appreciation",
+    rating_collaboration: "5", rating_reliability: "3",
+    rating_quality: "9", // out of range: dropped
+    rating_workload: "1", // a company question: not asked about a person, dropped
+    answer_keep: "  loved the release notes, carol  ", answer_better: "",
+    answer_working: "not asked about a person either",
+  }, alice);
+  assert.doesNotMatch(r.text, /pick someone|pick a vibe|answer at least/);
+  const row = db().prepare("SELECT message, ratings, answers FROM feedback WHERE recipient_id = ?").get(carolId);
+  assert.deepEqual(JSON.parse(row.ratings), [
+    { id: "collaboration", label: "Collaboration", value: 5 },
+    { id: "reliability", label: "Reliability", value: 3 },
+  ]);
+  assert.deepEqual(JSON.parse(row.answers), [{ id: "keep", label: "Keep doing", text: "loved the release notes, carol" }]);
+  assert.equal(row.message, "Keep doing: loved the release notes, carol");
+});
+await check("a note to everyone asks about working here instead", async () => {
+  const r = await submit("/give", "recipient", {
+    recipient: "everyone", category: "Suggestion", rating_workload: "2", rating_collaboration: "5",
+    answer_change: "friday demos should be shorter",
+  }, alice);
+  assert.doesNotMatch(r.text, /pick someone|pick a vibe|answer at least/);
+  const row = db().prepare("SELECT ratings, answers FROM feedback WHERE recipient_id IS NULL ORDER BY id DESC").get();
+  assert.deepEqual(JSON.parse(row.ratings), [{ id: "workload", label: "Workload", value: 2 }]);
+  assert.deepEqual(JSON.parse(row.answers), [{ id: "change", label: "One change", text: "friday demos should be shorter" }]);
+  assert.equal(count(), 3);
 });
 await check("the recipient reads it without ever being told who wrote it", async () => {
   carol = (await login("carol@nextqom.com", "pw-carol")).cookie;
   const { text } = await page("/inbox", carol);
   assert.match(text, /loved the release notes, carol/);
+  assert.match(text, /Keep doing/);
+  assert.match(text, /Collaboration/);
+  assert.match(text, /an old note from before the questions/, "notes from before the questions still show");
   assert.doesNotMatch(text, /Alice/); // not in the markup, not in the RSC payload, nowhere
   assert.doesNotMatch(text, /td-alice|alice@nextqom/);
 });
@@ -156,25 +215,29 @@ await check("with the key and an admin role, it returns every note with its auth
   const res = await api("/api/teamdesk/feedback?sort=new");
   assert.equal(res.status, 200);
   listed = await res.json();
-  assert.equal(listed.stats.total, 2);
-  assert.equal(listed.feedback.length, 2);
+  assert.equal(listed.stats.total, 3);
+  assert.equal(listed.feedback.length, 3);
   const toCarol = listed.feedback.find((f) => f.recipient_name === "Carol Neverloggedin");
   assert.equal(toCarol.author_name, "Alice Member");
+  assert.deepEqual(toCarol.ratings.map((r) => [r.label, r.value]), [["Collaboration", 5], ["Reliability", 3]]);
+  assert.deepEqual(toCarol.answers, [{ id: "keep", label: "Keep doing", text: "loved the release notes, carol" }]);
+  const old = listed.feedback.find((f) => f.author_name === "Sam Super");
+  assert.deepEqual([old.message, old.ratings, old.answers], ["an old note from before the questions", [], []]);
   assert.ok(listed.feedback.some((f) => f.recipient_name === null), "a note to everyone");
   assert.match(toCarol.created_at, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/);
   assert.ok(listed.people.some((p) => p.name === "Carol Neverloggedin"));
 });
 await check("filters narrow the list", async () => {
   const onlyEveryone = await (await api("/api/teamdesk/feedback?recipient=everyone")).json();
-  assert.equal(onlyEveryone.feedback.length, 1);
-  assert.equal(onlyEveryone.feedback[0].recipient_name, null);
+  assert.equal(onlyEveryone.feedback.length, 2);
+  assert.ok(onlyEveryone.feedback.every((f) => f.recipient_name === null));
 });
 await check("an admin can delete a note, and deleting it twice says it is gone", async () => {
   const id = listed.feedback[0].id;
   assert.equal((await api(`/api/teamdesk/feedback/${id}`, { method: "DELETE" })).status, 200);
   assert.equal((await api(`/api/teamdesk/feedback/${id}`, { method: "DELETE" })).status, 404);
   assert.equal((await api(`/api/teamdesk/feedback/${id}`, { method: "DELETE", key: null })).status, 404);
-  assert.equal(db().prepare("SELECT COUNT(*) c FROM feedback").get().c, 1);
+  assert.equal(count(), 2);
 });
 
 console.log("TeamDesk stays in charge");
