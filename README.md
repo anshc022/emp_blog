@@ -88,5 +88,16 @@ disk (a VPS, Railway, Render or Fly.io with a volume). Serverless hosts like Ver
 Always set `SESSION_SECRET` in production; the app refuses to run without it.
 
 It runs on the TeamDesk VM as `spill.service` (`/opt/spill`, data in `/var/lib/spill`, secrets in
-`/etc/spill/spill.env`), bound to the Docker bridge on port 3100 so only Caddy can reach it. See `deploy/` for the
-unit file and the deploy script.
+`/etc/spill/spill.env`), bound to the Docker bridge on port 3100 so only Caddy can reach it, at
+**https://feedback.35-200-237-138.nip.io**.
+
+Deploy **from your own machine**:
+
+```bash
+bash deploy/deploy.sh        # builds the commit you have checked out, ships it, restarts the service
+```
+
+**Never build on the VM.** It has 2 GB of RAM and runs TeamDesk; on 28 Sep 2026 a `next build` there used all of it,
+TeamDesk stopped answering for about half an hour and the machine had to be reset. `deploy.sh` builds locally and ships
+only `.next`; `deploy/remote.sh` does the VM side — installs dependencies only when the lockfile changed, swaps the build
+in, restarts, and keeps the previous build until the new one answers.
