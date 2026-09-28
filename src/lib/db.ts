@@ -82,8 +82,30 @@ function open() {
 }
 
 const globalForDb = globalThis as unknown as { db?: Database.Database };
-export const db = globalForDb.db ?? open();
-if (process.env.NODE_ENV !== "production") globalForDb.db = db;
+
+/**
+ * The database, opened on first use rather than on import.
+ *
+ * `next build` imports every route in several workers at once to collect page data. When importing
+ * opened the database, those workers raced to create the same fresh file and switch it to WAL, and
+ * one of them lost with SQLITE_BUSY — failing the build, but only sometimes, and only when the file
+ * did not exist yet. A build has no business creating a database anyway. Now nothing opens it until
+ * a request actually reads or writes, which happens in one server process.
+ *
+ * Cached on globalThis so dev-mode reloads reuse one connection instead of leaking them.
+ */
+function instance() {
+  globalForDb.db ??= open();
+  return globalForDb.db;
+}
+
+export const db: Database.Database = new Proxy({} as Database.Database, {
+  get(_, prop) {
+    const real = instance();
+    const value = Reflect.get(real, prop, real);
+    return typeof value === "function" ? value.bind(real) : value;
+  },
+});
 
 const USER_COLUMNS = "id, teamdesk_id, name, email, role, active, created_at";
 
