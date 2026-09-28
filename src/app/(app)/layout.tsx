@@ -11,10 +11,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
     { href: "/inbox", label: "inbox", icon: "inbox", badge: counts.recent ?? 0 },
     { href: "/sent", label: "sent", icon: "sent" },
     ...(user.role === "admin"
-      ? [
-          { href: "/admin", label: "all tea", icon: "admin" },
-          { href: "/admin/employees", label: "people", icon: "people" },
-        ]
+      ? [{ href: "/admin", label: "all tea", icon: "admin" as const }]
       : []),
   ];
 

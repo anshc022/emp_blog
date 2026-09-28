@@ -1,0 +1,37 @@
+# spill. on the TeamDesk VM. Installed by deploy/deploy.sh.
+#
+# Bound to the Docker bridge, not to a public interface: Caddy (a container) reaches it at
+# 172.17.0.1:3100 and nothing on the internet can. TeamDesk's backend container reaches it the
+# same way, for its admin page.
+[Unit]
+Description=spill. — anonymous feedback, signed in with TeamDesk
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=spill
+Group=spill
+WorkingDirectory=/opt/spill
+EnvironmentFile=/etc/spill/spill.env
+Environment=NODE_ENV=production
+Environment=DATABASE_PATH=/var/lib/spill/feedback.db
+ExecStart=/usr/bin/node /opt/spill/node_modules/next/dist/bin/next start -p 3100 -H 172.17.0.1
+# docker0 may come up a moment after this does; binding fails until it has, then succeeds
+Restart=always
+RestartSec=5
+MemoryHigh=350M
+MemoryMax=500M
+TasksMax=128
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/spill /opt/spill/.next
+# It reads feedback and names. It has no business near anything else on this machine.
+InaccessiblePaths=-/etc/teamdesk -/opt/teamdesk -/etc/ankki -/opt/ankki -/var/lib/ankki -/opt/td-query -/opt/sofi -/etc/sofi -/opt/ai-proxy
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

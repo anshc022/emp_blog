@@ -50,10 +50,10 @@ export default async function LoginPage() {
           <TeaCup3D size={170} />
         </Tilt>
         <h2 className="text-2xl font-semibold tracking-tight">who&apos;s there?</h2>
-        <p className="mt-1 mb-7 text-[15px] text-muted">log in with the account your admin made for you.</p>
+        <p className="mt-1 mb-7 text-[15px] text-muted">same email and password as TeamDesk.</p>
         <LoginForm />
         <p className="mt-8 text-[13px] text-faint">
-          no account? slide into your super admin&apos;s DMs.
+          can&apos;t get in? it&apos;s your TeamDesk login. forgot it? ask an admin to reset it in TeamDesk.
         </p>
       </section>
     </main>

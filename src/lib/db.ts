@@ -1,6 +1,5 @@
 import "server-only";
 import Database from "better-sqlite3";
-import bcrypt from "bcryptjs";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -8,10 +7,12 @@ export type Role = "admin" | "employee";
 
 export type User = {
   id: number;
+  /** The person's id in TeamDesk, which owns the account. */
+  teamdesk_id: string;
   name: string;
-  email: string;
+  /** Known once they have signed in here; the colleague list TeamDesk shares carries no emails. */
+  email: string | null;
   role: Role;
-  department: string | null;
   active: number;
   created_at: string;
 };
@@ -33,15 +34,17 @@ function open() {
   db.pragma("foreign_keys = ON");
 
   db.exec(`
+    -- Accounts live in TeamDesk. This is a copy of who exists, so feedback can be addressed and
+    -- read back; there is no password here to leak or to forget to change.
     CREATE TABLE IF NOT EXISTS users (
       id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      teamdesk_id   TEXT NOT NULL UNIQUE,
       name          TEXT NOT NULL,
-      email         TEXT NOT NULL UNIQUE COLLATE NOCASE,
-      password_hash TEXT NOT NULL,
+      email         TEXT UNIQUE COLLATE NOCASE,
       role          TEXT NOT NULL DEFAULT 'employee' CHECK (role IN ('admin', 'employee')),
-      department    TEXT,
       active        INTEGER NOT NULL DEFAULT 1,
-      created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+      created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+      last_login_at TEXT
     );
 
     -- recipient_id NULL means the feedback is addressed to everyone.
@@ -65,15 +68,14 @@ function open() {
     CREATE INDEX IF NOT EXISTS feedback_author ON feedback(author_id);
   `);
 
-  // Bootstrap the first super admin so a fresh install can log in.
-  // OR IGNORE: several build workers may open a fresh database at once.
-  const { count } = db.prepare("SELECT COUNT(*) AS count FROM users").get() as { count: number };
-  if (count === 0) {
-    const email = process.env.ADMIN_EMAIL ?? "admin@company.com";
-    const password = process.env.ADMIN_PASSWORD ?? "admin1234";
-    db.prepare(
-      "INSERT OR IGNORE INTO users (name, email, password_hash, role) VALUES (?, ?, ?, 'admin')",
-    ).run("Super Admin", email, bcrypt.hashSync(password, 10));
+  // A database made before sign-in moved to TeamDesk has local passwords and no TeamDesk ids.
+  // Refuse it loudly rather than half-work: nobody could sign in, and the old accounts would sit
+  // there with password hashes nobody meant to keep.
+  const columns = db.prepare("PRAGMA table_info(users)").all() as { name: string }[];
+  if (!columns.some((c) => c.name === "teamdesk_id")) {
+    throw new Error(
+      `${dbPath} predates TeamDesk sign-in. Point DATABASE_PATH at a fresh file, or migrate it.`,
+    );
   }
 
   return db;
@@ -83,15 +85,59 @@ const globalForDb = globalThis as unknown as { db?: Database.Database };
 export const db = globalForDb.db ?? open();
 if (process.env.NODE_ENV !== "production") globalForDb.db = db;
 
-const USER_COLUMNS = "id, name, email, role, department, active, created_at";
+const USER_COLUMNS = "id, teamdesk_id, name, email, role, active, created_at";
 
 export function getUserById(id: number) {
   return db.prepare(`SELECT ${USER_COLUMNS} FROM users WHERE id = ?`).get(id) as User | undefined;
 }
 
-export function getUserWithHash(email: string) {
-  return db.prepare(`SELECT ${USER_COLUMNS}, password_hash FROM users WHERE email = ?`).get(email) as
-    | (User & { password_hash: string })
+const toRole = (teamdeskRole: string): Role =>
+  teamdeskRole === "ADMIN" || teamdeskRole === "SUPER_ADMIN" ? "admin" : "employee";
+
+/**
+ * Record the person who just signed in, as TeamDesk describes them.
+ *
+ * Name, email and role come from TeamDesk every time, so a promotion, a rename or a new email
+ * there is true here at the next sign-in without anyone touching this app.
+ */
+export function upsertSignedIn(person: { id: string; name: string; email: string; global_role: string }) {
+  db.prepare(
+    `INSERT INTO users (teamdesk_id, name, email, role, active, last_login_at)
+     VALUES (@id, @name, @email, @role, 1, datetime('now'))
+     ON CONFLICT (teamdesk_id) DO UPDATE SET
+       name = excluded.name, email = excluded.email, role = excluded.role,
+       active = 1, last_login_at = excluded.last_login_at`,
+  ).run({ id: person.id, name: person.name, email: person.email.toLowerCase(), role: toRole(person.global_role) });
+  return db.prepare(`SELECT ${USER_COLUMNS} FROM users WHERE teamdesk_id = ?`).get(person.id) as User;
+}
+
+/**
+ * Bring the colleague list in line with TeamDesk's.
+ *
+ * Everyone TeamDesk lists as active can be written to — including people who have never opened
+ * this app, which is the point: feedback should not wait for its recipient to sign up. Anyone
+ * missing from the list has left or been deactivated there, so they are deactivated here too,
+ * which also ends any session they still hold. Their past feedback stays, and so do their stars.
+ */
+export function syncDirectory(people: { id: string; name: string; global_role: string; is_active: boolean }[]) {
+  const active = people.filter((p) => p.is_active);
+  if (active.length === 0) return; // an empty answer is a fault, not a company with nobody in it
+  const upsert = db.prepare(
+    `INSERT INTO users (teamdesk_id, name, role, active) VALUES (@id, @name, @role, 1)
+     ON CONFLICT (teamdesk_id) DO UPDATE SET name = excluded.name, role = excluded.role, active = 1`,
+  );
+  const ids = active.map((p) => p.id);
+  db.transaction(() => {
+    for (const p of active) upsert.run({ id: p.id, name: p.name, role: toRole(p.global_role) });
+    db.prepare(
+      `UPDATE users SET active = 0 WHERE teamdesk_id NOT IN (${ids.map(() => "?").join(",")})`,
+    ).run(...ids);
+  })();
+}
+
+export function getUserByTeamDeskId(teamdeskId: string) {
+  return db.prepare(`SELECT ${USER_COLUMNS} FROM users WHERE teamdesk_id = ?`).get(teamdeskId) as
+    | User
     | undefined;
 }
 

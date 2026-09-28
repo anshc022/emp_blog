@@ -1,6 +1,6 @@
 "use server";
 
-import bcrypt from "bcryptjs";
+import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
@@ -10,10 +10,13 @@ import {
   createFeedback,
   db,
   getUserById,
-  getUserWithHash,
+  syncDirectory,
   toggleStar as toggleStarRow,
+  upsertSignedIn,
 } from "./db";
+import { clearFailures, lockedFor, recordFailure } from "./rate-limit";
 import { createSession, deleteSession, requireAdmin, requireUser } from "./session";
+import { signInWithTeamDesk, TeamDeskUnavailable } from "./teamdesk";
 
 export type FormState = { error?: string; success?: string } | undefined;
 
@@ -25,15 +28,44 @@ function text(form: FormData, key: string) {
 
 /* ---------------------------- Auth ---------------------------- */
 
-export async function login(_: FormState, form: FormData): Promise<FormState> {
-  const email = text(form, "email");
-  const password = String(form.get("password") ?? "");
-  const user = email ? getUserWithHash(email) : undefined;
+/** The address the request came from, as Caddy saw it. Caddy replaces any client-sent value. */
+async function clientIp() {
+  const h = await headers();
+  return h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "unknown";
+}
 
-  if (!user || !user.active || !(await bcrypt.compare(password, user.password_hash))) {
-    return { error: "hmm, that email + password combo isn't it" };
+/**
+ * Sign in with a TeamDesk email and password.
+ *
+ * There is no account to create here and no password to reset: TeamDesk decides who someone is
+ * and whether they are an admin, and this app keeps the name.
+ */
+export async function login(_: FormState, form: FormData): Promise<FormState> {
+  const email = text(form, "email").toLowerCase();
+  const password = String(form.get("password") ?? "");
+  if (!email || !password) return { error: "email and password, both please" };
+
+  const ip = await clientIp();
+  const wait = lockedFor(ip, email);
+  if (wait) return { error: `too many tries. breathe, then try again in ${wait} min` };
+
+  let result;
+  try {
+    result = await signInWithTeamDesk(email, password);
+  } catch (err) {
+    if (err instanceof TeamDeskUnavailable) {
+      return { error: "can't reach TeamDesk right now. try again in a minute" };
+    }
+    throw err;
+  }
+  if (!result) {
+    recordFailure(ip, email);
+    return { error: "that's not your TeamDesk email + password" };
   }
 
+  clearFailures(ip, email);
+  if (result.directory) syncDirectory(result.directory);
+  const user = upsertSignedIn(result.me);
   await createSession(user.id);
   redirect(user.role === "admin" ? "/admin" : "/inbox");
 }
@@ -41,21 +73,6 @@ export async function login(_: FormState, form: FormData): Promise<FormState> {
 export async function logout() {
   await deleteSession();
   redirect("/login");
-}
-
-export async function changePassword(_: FormState, form: FormData): Promise<FormState> {
-  const user = await requireUser();
-  const current = String(form.get("current") ?? "");
-  const next = String(form.get("next") ?? "");
-
-  const withHash = getUserWithHash(user.email);
-  if (!withHash || !(await bcrypt.compare(current, withHash.password_hash))) {
-    return { error: "that's not your current password bestie" };
-  }
-  if (next.length < 8) return { error: "new password needs 8+ characters" };
-
-  db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(await bcrypt.hash(next, 10), user.id);
-  return { success: "password updated. you're secure now" };
 }
 
 /* -------------------------- Feedback -------------------------- */
@@ -91,54 +108,6 @@ export async function toggleStar(feedbackId: number) {
 }
 
 /* --------------------------- Admin ---------------------------- */
-
-export async function createEmployee(_: FormState, form: FormData): Promise<FormState> {
-  await requireAdmin();
-  const name = text(form, "name");
-  const email = text(form, "email").toLowerCase();
-  const department = text(form, "department") || null;
-  const password = String(form.get("password") ?? "");
-  const role = form.get("role") === "admin" ? "admin" : "employee";
-
-  if (!name) return { error: "they need a name" };
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error: "that email looks sus" };
-  if (password.length < 8) return { error: "temp password needs 8+ characters" };
-  if (getUserWithHash(email)) return { error: "someone with that email is already in the squad" };
-
-  db.prepare(
-    "INSERT INTO users (name, email, password_hash, role, department) VALUES (?, ?, ?, ?, ?)",
-  ).run(name, email, await bcrypt.hash(password, 10), role, department);
-
-  revalidatePath("/admin", "layout");
-  return { success: `${name} joined the squad. send them the temp password privately` };
-}
-
-export async function resetPassword(_: FormState, form: FormData): Promise<FormState> {
-  await requireAdmin();
-  const id = Number(form.get("id"));
-  const password = String(form.get("password") ?? "");
-  if (password.length < 8) return { error: "8+ characters pls" };
-  db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(await bcrypt.hash(password, 10), id);
-  return { success: "password reset" };
-}
-
-export async function toggleActive(form: FormData) {
-  const admin = await requireAdmin();
-  const id = Number(form.get("id"));
-  if (id === admin.id) return; // never lock yourself out
-  db.prepare("UPDATE users SET active = 1 - active WHERE id = ?").run(id);
-  revalidatePath("/", "layout");
-}
-
-export async function toggleRole(form: FormData) {
-  const admin = await requireAdmin();
-  const id = Number(form.get("id"));
-  if (id === admin.id) return; // keep at least the current admin
-  db.prepare(
-    "UPDATE users SET role = CASE role WHEN 'admin' THEN 'employee' ELSE 'admin' END WHERE id = ?",
-  ).run(id);
-  revalidatePath("/", "layout");
-}
 
 export async function deleteFeedback(form: FormData) {
   await requireAdmin();
