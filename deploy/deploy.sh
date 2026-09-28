@@ -1,54 +1,36 @@
 #!/usr/bin/env bash
-# Deploy spill. on the TeamDesk VM.   sudo bash deploy.sh [branch]      (default: main)
+# Deploy spill. to the TeamDesk VM.  Run from YOUR machine, never on the VM:
 #
-# Idempotent: the first run creates the service user, the data and secrets directories and fresh
-# secrets; every run checks out the branch, builds it as the service user and restarts. Secrets are
-# generated here and never leave the machine — nothing prints them.
+#     bash deploy/deploy.sh                      # deploys the commit you have checked out
+#     SSH_TARGET=user@host bash deploy/deploy.sh
+#
+# Why the build happens here: the VM has 2 GB of RAM and runs TeamDesk. On 28 Sep 2026 a
+# `next build` on it used all of that memory, TeamDesk stopped answering for about half an hour,
+# and the box had to be reset from the Cloud console. The build is heavy and the result is plain
+# JavaScript, so it is made here and only the output is shipped; the VM installs dependencies
+# (only when the lockfile changed) and restarts. Nothing heavy runs next to TeamDesk.
 set -euo pipefail
+cd "$(dirname "$0")/.."
 
-REF="${1:-main}"
-REPO="https://github.com/anshc022/emp_blog.git"
-APP=/opt/spill
-DATA=/var/lib/spill
-ETC=/etc/spill
+SSH_TARGET="${SSH_TARGET:-pranshuchourasia@35.200.237.138}"
+SSH=(ssh -i "${SSH_KEY:-$HOME/.ssh/google_compute_engine}" -o ConnectTimeout=30)
+SCP=(scp -i "${SSH_KEY:-$HOME/.ssh/google_compute_engine}" -o ConnectTimeout=30 -q)
 
-id spill >/dev/null 2>&1 || useradd --system --home-dir "$APP" --shell /usr/sbin/nologin spill
-install -d -o spill -g spill -m 750 "$DATA"
-install -d -o root -g spill -m 750 "$ETC"
-
-if [ ! -f "$ETC/spill.env" ]; then
-  ( umask 027
-    {
-      echo "SESSION_SECRET=$(openssl rand -base64 32)"
-      echo "TEAMDESK_API_URL=https://35-200-237-138.nip.io"
-      echo "TEAMDESK_APP_KEY=$(openssl rand -hex 24)"
-    } > "$ETC/spill.env" )
-  chown root:spill "$ETC/spill.env"
-  chmod 640 "$ETC/spill.env"
-  echo "created $ETC/spill.env with fresh secrets"
+if [ -n "$(git status --porcelain)" ]; then
+  echo "commit or stash first — the VM checks out the same commit this build comes from" >&2
+  exit 1
 fi
+COMMIT="$(git rev-parse HEAD)"
+git fetch -q origin
+git branch -r --contains "$COMMIT" | grep -q . || { echo "push $COMMIT first — the VM fetches it from GitHub" >&2; exit 1; }
 
-if [ ! -d "$APP/.git" ]; then
-  install -d -o spill -g spill "$APP"
-  sudo -u spill git clone --quiet "$REPO" "$APP"
-fi
-sudo -u spill git -C "$APP" fetch --quiet origin
-sudo -u spill git -C "$APP" checkout --quiet --force "origin/$REF"
-echo "building $(sudo -u spill git -C "$APP" log -1 --format='%h %s')"
+echo "building $(git log -1 --format='%h %s') here"
+npm ci --no-audit --no-fund --loglevel=error
+rm -rf .next
+NODE_ENV=production SESSION_SECRET=build-only DATABASE_PATH="$(mktemp -d)/build.db" npx next build >/dev/null
 
-# Build against a throwaway database: the build imports the app, which opens one.
-sudo -u spill bash -c "cd '$APP' && npm ci --no-audit --no-fund --loglevel=error \
-  && NODE_ENV=production SESSION_SECRET=build-only DATABASE_PATH='$APP/.build.db' npx next build >/dev/null \
-  && rm -f '$APP'/.build.db*"
-
-install -m 644 "$APP/deploy/spill.service" /etc/systemd/system/spill.service
-systemctl daemon-reload
-systemctl enable --quiet spill
-systemctl restart spill
-
-for _ in $(seq 1 30); do
-  curl -sf -o /dev/null http://172.17.0.1:3100/login && { echo "spill is up on 172.17.0.1:3100"; exit 0; }
-  sleep 1
-done
-journalctl -u spill -n 40 --no-pager
-exit 1
+BUNDLE="$(mktemp -d)/spill-next.tgz"
+tar -czf "$BUNDLE" --exclude='.next/cache' .next
+echo "shipping $(du -h "$BUNDLE" | cut -f1) of build output"
+"${SCP[@]}" "$BUNDLE" "$SSH_TARGET:/tmp/spill-next.tgz"
+"${SSH[@]}" "$SSH_TARGET" "sudo bash -s $COMMIT" < deploy/remote.sh
